@@ -1,18 +1,29 @@
 {
   "name": "agencer-voice-demo",
-  "version": "1.0.0",
-  "description": "Voice-enabled AI sales assistant powered by Claude and ElevenLabs",
+  "version": "2.0.0",
+  "description": "Voice-enabled AI sales assistant using ElevenLabs Conversational AI with Claude Opus 4.5",
   "type": "module",
-  "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js",
+    "start": "concurrently \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@elevenlabs/react": "^0.12.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.0"
+    "express": "^4.21.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "vite": "^5.4.2"
   },
   "engines": {
     "node": ">=18.0.0"
