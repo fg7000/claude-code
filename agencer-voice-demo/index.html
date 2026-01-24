@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agencer - Voice-First AI Command Center</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="20" cy="20" r="8" fill="currentColor"/>
+                    <path d="M20 2V10M20 30V38M2 20H10M30 20H38" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="logo-text">Agencer</span>
+            </div>
+            <p class="tagline">Voice-First AI Command Center</p>
+        </header>
+
+        <main class="main">
+            <div class="call-container">
+                <div id="status" class="status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Ready to connect</span>
+                </div>
+
+                <button id="call-button" class="call-button">
+                    <svg class="mic-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 1C10.34 1 9 2.34 9 4V12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12V4C15 2.34 13.66 1 12 1Z" fill="currentColor"/>
+                        <path d="M19 10V12C19 15.87 15.87 19 12 19C8.13 19 5 15.87 5 12V10H3V12C3 16.41 6.28 20.05 10.5 20.82V23H13.5V20.82C17.72 20.05 21 16.41 21 12V10H19Z" fill="currentColor"/>
+                    </svg>
+                    <span class="button-text">Start Conversation</span>
+                </button>
+
+                <div id="volume-indicator" class="volume-indicator">
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                    <div class="volume-bar"></div>
+                </div>
+            </div>
+
+            <div class="transcript-container">
+                <h2 class="transcript-title">Conversation</h2>
+                <div id="transcript" class="transcript">
+                    <div class="transcript-placeholder">
+                        Your conversation will appear here...
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by <a href="https://vapi.ai" target="_blank" rel="noopener">Vapi</a> + Claude Opus</p>
+        </footer>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
