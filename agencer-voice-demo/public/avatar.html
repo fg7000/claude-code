@@ -488,14 +488,14 @@
 
       <div class="control-row">
         <label>Particle Count</label>
-        <input type="range" id="particleCount" min="5000" max="25000" value="15000" step="1000">
-        <span class="value" id="particleCount-val">15000</span>
+        <input type="range" id="particleCount" min="10000" max="40000" value="20000" step="2000">
+        <span class="value" id="particleCount-val">20000</span>
       </div>
 
       <div class="control-row">
         <label>Particle Size</label>
-        <input type="range" id="particleSize" min="0.5" max="4" value="1.5" step="0.1">
-        <span class="value" id="particleSize-val">1.50</span>
+        <input type="range" id="particleSize" min="0.2" max="2" value="0.6" step="0.1">
+        <span class="value" id="particleSize-val">0.60</span>
       </div>
 
       <div class="control-row">
@@ -517,8 +517,8 @@
 
       <div class="control-row">
         <label>Wave Amplitude</label>
-        <input type="range" id="waveAmplitude" min="0" max="100" value="30" step="5">
-        <span class="value" id="waveAmplitude-val">30</span>
+        <input type="range" id="waveAmplitude" min="0" max="100" value="50" step="5">
+        <span class="value" id="waveAmplitude-val">50</span>
       </div>
     </div>
 
@@ -528,8 +528,8 @@
 
       <div class="control-row">
         <label>Audio Sensitivity</label>
-        <input type="range" id="audioSensitivity" min="0" max="1" value="0.7" step="0.05">
-        <span class="value" id="audioSensitivity-val">0.70</span>
+        <input type="range" id="audioSensitivity" min="0" max="2" value="1.0" step="0.1">
+        <span class="value" id="audioSensitivity-val">1.00</span>
       </div>
     </div>
 
@@ -539,8 +539,8 @@
 
       <div class="control-row">
         <label>Bloom Strength</label>
-        <input type="range" id="bloomStrength" min="0" max="1" value="0.4" step="0.05">
-        <span class="value" id="bloomStrength-val">0.40</span>
+        <input type="range" id="bloomStrength" min="0" max="0.5" value="0.15" step="0.01">
+        <span class="value" id="bloomStrength-val">0.15</span>
       </div>
     </div>
 
@@ -594,13 +594,13 @@
     // ============================================
 
     const CONFIG = {
-      particleCount: 15000,
-      particleSize: 1.5,
+      particleCount: 20000,
+      particleSize: 0.6,
       breathingIntensity: 0.3,
       depthIntensity: 0.5,
-      waveAmplitude: 30,
-      audioSensitivity: 0.7,
-      bloomStrength: 0.4
+      waveAmplitude: 50,
+      audioSensitivity: 1.0,
+      bloomStrength: 0.15
     };
 
     const DEFAULTS = { ...CONFIG };
@@ -915,9 +915,9 @@
             vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
             gl_Position = projectionMatrix * mvPosition;
 
-            // Size with depth perspective
-            float depthSize = zScale * (1.0 + uAudioLevel * 0.2);
-            gl_PointSize = size * uSize * uPixelRatio * depthSize * (50.0 / -mvPosition.z);
+            // Size with depth perspective - smaller, cleaner particles
+            float depthSize = zScale * (1.0 + uAudioLevel * 0.1);
+            gl_PointSize = size * uSize * uPixelRatio * depthSize * (20.0 / -mvPosition.z);
 
             vColor = color;
           }
@@ -927,21 +927,20 @@
           varying float vBrightness;
 
           void main() {
-            // Soft circular particle with glow halo
+            // Clean circular particle - no glow halo
             vec2 center = gl_PointCoord - vec2(0.5);
             float dist = length(center);
 
-            // Soft falloff
-            float alpha = 1.0 - smoothstep(0.3, 0.5, dist);
+            // Sharp circular falloff
+            float alpha = 1.0 - smoothstep(0.35, 0.5, dist);
 
-            // Glow halo
-            float glow = exp(-dist * 4.0) * 0.5;
-            alpha += glow;
+            // Discard pixels outside circle
+            if (dist > 0.5) discard;
 
-            // Apply exact logo colors with brightness modulation
-            vec3 finalColor = vColor * vBrightness;
+            // Apply exact logo colors with subtle brightness modulation
+            vec3 finalColor = vColor * min(vBrightness, 1.2);
 
-            gl_FragColor = vec4(finalColor, alpha * 0.7);
+            gl_FragColor = vec4(finalColor, alpha * 0.5);
           }
         `,
         transparent: true,
@@ -1006,9 +1005,9 @@
 
       ringMaterial = new THREE.LineBasicMaterial({
         vertexColors: true,
-        linewidth: 2,
+        linewidth: 3,
         transparent: true,
-        opacity: 0.9
+        opacity: 1.0
       });
 
       ringLine = new THREE.LineLoop(ringGeometry, ringMaterial);
@@ -1017,25 +1016,42 @@
 
     function updateRingWaveform() {
       const positions = ringGeometry.attributes.position.array;
-      const fftData = smoothedMicFFT || new Float32Array(128);
-      const waveAmp = CONFIG.waveAmplitude / 1000; // Convert to world units
+      const fftData = smoothedMicFFT;
+      // Wave amplitude: 0-100 slider maps to 0-0.3 world units
+      const waveAmp = CONFIG.waveAmplitude / 100 * 0.3;
+
+      // Check if we have real audio data
+      let hasAudio = false;
+      if (fftData) {
+        for (let i = 0; i < fftData.length; i++) {
+          if (fftData[i] > 0.1) {
+            hasAudio = true;
+            break;
+          }
+        }
+      }
 
       for (let i = 0; i < RING_SEGMENTS; i++) {
         const angle = (i / RING_SEGMENTS) * Math.PI * 2;
         const i3 = i * 3;
 
-        // Map ring position to FFT bin
-        const fftBin = Math.floor((i / RING_SEGMENTS) * fftData.length);
-        const fftValue = fftData[fftBin] || 0;
+        let displacement = 0;
 
-        // Bipolar displacement: wave goes BOTH inward and outward
-        // Normalize to -0.5 to 0.5 range, then scale
-        const displacement = (fftValue - 0.5) * 2 * waveAmp * CONFIG.audioSensitivity;
+        if (hasAudio && fftData) {
+          // Map ring position to FFT bin
+          const fftBin = Math.floor((i / RING_SEGMENTS) * fftData.length);
+          const fftValue = fftData[fftBin] || 0;
 
-        // Idle wave (subtle traveling wave when no audio)
-        const idleWave = Math.sin(angle * 3 + time * 0.5) * 0.01 * CONFIG.breathingIntensity;
+          // Bipolar displacement: wave goes BOTH inward and outward from center
+          // fftValue is 0-1, we want -0.5 to 0.5 range
+          displacement = (fftValue - 0.5) * 2 * waveAmp * CONFIG.audioSensitivity;
+        }
 
-        const radius = RING_BASE_RADIUS + displacement + idleWave;
+        // Idle wave (visible traveling wave when no audio)
+        const idleWave = Math.sin(angle * 4 + time * 1.5) * 0.03 * CONFIG.breathingIntensity;
+        const idleWave2 = Math.sin(angle * 2 - time * 0.8) * 0.015 * CONFIG.breathingIntensity;
+
+        const radius = RING_BASE_RADIUS + displacement + idleWave + idleWave2;
 
         positions[i3] = Math.cos(angle) * radius;
         positions[i3 + 1] = Math.sin(angle) * radius;
@@ -1055,8 +1071,8 @@
       bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
         CONFIG.bloomStrength,
-        0.4,
-        0.3
+        0.3,  // radius
+        0.85  // threshold - higher means less glow
       );
       composer.addPass(bloomPass);
     }
