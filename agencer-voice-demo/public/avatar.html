@@ -520,8 +520,8 @@
 
       <div class="control-row">
         <label>Particle Size</label>
-        <input type="range" id="particleSize" min="0.5" max="5" value="1.5" step="0.25">
-        <span class="value" id="particleSize-val">1.50</span>
+        <input type="range" id="particleSize" min="0.5" max="5" value="1.0" step="0.25">
+        <span class="value" id="particleSize-val">1.00</span>
       </div>
 
       <div class="control-row">
@@ -560,20 +560,20 @@
 
       <div class="control-row">
         <label>Bloom Strength</label>
-        <input type="range" id="bloomStrength" min="0" max="2" value="0.6" step="0.1">
-        <span class="value" id="bloomStrength-val">0.60</span>
+        <input type="range" id="bloomStrength" min="0" max="2" value="0.3" step="0.1">
+        <span class="value" id="bloomStrength-val">0.30</span>
       </div>
 
       <div class="control-row">
         <label>Bloom Threshold</label>
-        <input type="range" id="bloomThreshold" min="0" max="1" value="0.4" step="0.05">
-        <span class="value" id="bloomThreshold-val">0.40</span>
+        <input type="range" id="bloomThreshold" min="0" max="1" value="0.6" step="0.05">
+        <span class="value" id="bloomThreshold-val">0.60</span>
       </div>
 
       <div class="control-row">
         <label>Bloom Radius</label>
-        <input type="range" id="bloomRadius" min="0.1" max="1.5" value="0.5" step="0.1">
-        <span class="value" id="bloomRadius-val">0.50</span>
+        <input type="range" id="bloomRadius" min="0.1" max="1.5" value="0.3" step="0.1">
+        <span class="value" id="bloomRadius-val">0.30</span>
       </div>
     </div>
 
@@ -650,14 +650,14 @@
 
     const CONFIG = {
       particleCount: 10000,
-      particleSize: 1.5,
+      particleSize: 1.0,
       scatterIntensity: 1,
       breathingIntensity: 0.3,
       rotationSpeed: 0.02,
       ringDisplacement: 0.5,
-      bloomStrength: 0.6,
-      bloomThreshold: 0.4,
-      bloomRadius: 0.5,
+      bloomStrength: 0.3,
+      bloomThreshold: 0.6,
+      bloomRadius: 0.3,
       colorSaturation: 1,
       hueShift: 0
     };
@@ -1073,12 +1073,12 @@
             gl_Position = projectionMatrix * mvPosition;
 
             // Size with audio and high freq variation
-            float audioSizeBoost = 1.0 + uAudioLevel * 0.3 + uHighFreq * 0.2;
-            gl_PointSize = size * uSize * uPixelRatio * audioSizeBoost * (80.0 / -mvPosition.z);
+            float audioSizeBoost = 1.0 + uAudioLevel * 0.2 + uHighFreq * 0.1;
+            gl_PointSize = size * uSize * uPixelRatio * audioSizeBoost * (25.0 / -mvPosition.z);
 
-            // Pass color and alpha
+            // Pass color and alpha - keep low for distinct particles
             vColor = color;
-            vAlpha = 0.8 + uAudioLevel * 0.2;
+            vAlpha = 0.5 + uAudioLevel * 0.15;
           }
         `,
         fragmentShader: `
@@ -1118,10 +1118,11 @@
             hsv.y *= uSaturation;
             vec3 color = hsv2rgb(hsv);
 
-            // Subtle emissive boost for bloom - keep particles distinct
-            float emissiveBoost = 1.0 + glow * 0.2 + uAudioLevel * 0.2;
+            // Keep emissive minimal to preserve distinct particles
+            float emissiveBoost = 0.8 + glow * 0.1 + uAudioLevel * 0.1;
 
-            gl_FragColor = vec4(color * emissiveBoost, alpha * vAlpha * 0.9);
+            // Much lower alpha to prevent white-out with additive blending
+            gl_FragColor = vec4(color * emissiveBoost, alpha * vAlpha * 0.35);
           }
         `,
         transparent: true,
@@ -1237,9 +1238,9 @@
             hsv.y *= uSaturation;
             vec3 color = hsv2rgb(hsv);
 
-            float emissive = 1.0 + glow * 0.15 + uAudioLevel * 0.3;
+            float emissive = 0.8 + glow * 0.1 + uAudioLevel * 0.2;
 
-            gl_FragColor = vec4(color * emissive, alpha * 0.8);
+            gl_FragColor = vec4(color * emissive, alpha * 0.5);
           }
         `,
         transparent: true,
