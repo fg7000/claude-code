@@ -520,8 +520,8 @@
 
       <div class="control-row">
         <label>Particle Size</label>
-        <input type="range" id="particleSize" min="0.5" max="5" value="1.0" step="0.25">
-        <span class="value" id="particleSize-val">1.00</span>
+        <input type="range" id="particleSize" min="0.5" max="5" value="1.5" step="0.25">
+        <span class="value" id="particleSize-val">1.50</span>
       </div>
 
       <div class="control-row">
@@ -532,8 +532,8 @@
 
       <div class="control-row">
         <label>Breathing Intensity</label>
-        <input type="range" id="breathingIntensity" min="0" max="1" value="0.3" step="0.05">
-        <span class="value" id="breathingIntensity-val">0.30</span>
+        <input type="range" id="breathingIntensity" min="0" max="1" value="0.4" step="0.05">
+        <span class="value" id="breathingIntensity-val">0.40</span>
       </div>
 
       <div class="control-row">
@@ -560,20 +560,20 @@
 
       <div class="control-row">
         <label>Bloom Strength</label>
-        <input type="range" id="bloomStrength" min="0" max="2" value="0.3" step="0.1">
-        <span class="value" id="bloomStrength-val">0.30</span>
+        <input type="range" id="bloomStrength" min="0" max="2" value="0.5" step="0.1">
+        <span class="value" id="bloomStrength-val">0.50</span>
       </div>
 
       <div class="control-row">
         <label>Bloom Threshold</label>
-        <input type="range" id="bloomThreshold" min="0" max="1" value="0.6" step="0.05">
-        <span class="value" id="bloomThreshold-val">0.60</span>
+        <input type="range" id="bloomThreshold" min="0" max="1" value="0.4" step="0.05">
+        <span class="value" id="bloomThreshold-val">0.40</span>
       </div>
 
       <div class="control-row">
         <label>Bloom Radius</label>
-        <input type="range" id="bloomRadius" min="0.1" max="1.5" value="0.3" step="0.1">
-        <span class="value" id="bloomRadius-val">0.30</span>
+        <input type="range" id="bloomRadius" min="0.1" max="1.5" value="0.4" step="0.1">
+        <span class="value" id="bloomRadius-val">0.40</span>
       </div>
     </div>
 
@@ -650,14 +650,14 @@
 
     const CONFIG = {
       particleCount: 10000,
-      particleSize: 1.0,
+      particleSize: 1.5,
       scatterIntensity: 1,
-      breathingIntensity: 0.3,
+      breathingIntensity: 0.4,
       rotationSpeed: 0.02,
       ringDisplacement: 0.5,
-      bloomStrength: 0.3,
-      bloomThreshold: 0.6,
-      bloomRadius: 0.3,
+      bloomStrength: 0.5,
+      bloomThreshold: 0.4,
+      bloomRadius: 0.4,
       colorSaturation: 1,
       hueShift: 0
     };
@@ -1073,12 +1073,12 @@
             gl_Position = projectionMatrix * mvPosition;
 
             // Size with audio and high freq variation
-            float audioSizeBoost = 1.0 + uAudioLevel * 0.2 + uHighFreq * 0.1;
-            gl_PointSize = size * uSize * uPixelRatio * audioSizeBoost * (25.0 / -mvPosition.z);
+            float audioSizeBoost = 1.0 + uAudioLevel * 0.3 + uHighFreq * 0.15;
+            gl_PointSize = size * uSize * uPixelRatio * audioSizeBoost * (50.0 / -mvPosition.z);
 
-            // Pass color and alpha - keep low for distinct particles
+            // Pass color and alpha
             vColor = color;
-            vAlpha = 0.5 + uAudioLevel * 0.15;
+            vAlpha = 0.7 + uAudioLevel * 0.2;
           }
         `,
         fragmentShader: `
@@ -1118,11 +1118,11 @@
             hsv.y *= uSaturation;
             vec3 color = hsv2rgb(hsv);
 
-            // Keep emissive minimal to preserve distinct particles
-            float emissiveBoost = 0.8 + glow * 0.1 + uAudioLevel * 0.1;
+            // Moderate emissive for visible particles with glow
+            float emissiveBoost = 0.9 + glow * 0.15 + uAudioLevel * 0.15;
 
-            // Much lower alpha to prevent white-out with additive blending
-            gl_FragColor = vec4(color * emissiveBoost, alpha * vAlpha * 0.35);
+            // Balanced alpha - visible particles without white-out
+            gl_FragColor = vec4(color * emissiveBoost, alpha * vAlpha * 0.5);
           }
         `,
         transparent: true,
@@ -1135,13 +1135,20 @@
     }
 
     function createRing() {
-      const segments = 256;
+      // Use TorusGeometry for a solid continuous ring
       const radius = 1.1;
+      const tubeRadius = 0.015; // Thickness of the ring
+      const radialSegments = 64;
+      const tubularSegments = 128;
 
-      ringGeometry = new THREE.BufferGeometry();
-      ringPositions = new Float32Array(segments * 3);
-      ringHomePositions = new Float32Array(segments * 3);
-      const ringColors = new Float32Array(segments * 3);
+      ringGeometry = new THREE.TorusGeometry(radius, tubeRadius, radialSegments, tubularSegments);
+
+      // Store base positions for displacement animation
+      ringHomePositions = new Float32Array(ringGeometry.attributes.position.array);
+
+      // Add vertex colors based on angle
+      const positions = ringGeometry.attributes.position.array;
+      const colors = new Float32Array(positions.length);
 
       // Ring color gradient (yellow -> green -> cyan from the logo edge)
       const ringColorStops = [
@@ -1152,6 +1159,7 @@
       ];
 
       function getRingColor(t) {
+        t = ((t % 1) + 1) % 1; // Normalize to 0-1
         for (let i = 0; i < ringColorStops.length - 1; i++) {
           if (t >= ringColorStops[i].t && t <= ringColorStops[i + 1].t) {
             const localT = (t - ringColorStops[i].t) / (ringColorStops[i + 1].t - ringColorStops[i].t);
@@ -1165,27 +1173,19 @@
         return ringColorStops[0].color;
       }
 
-      for (let i = 0; i < segments; i++) {
-        const angle = (i / segments) * Math.PI * 2;
-        const i3 = i * 3;
-
-        ringPositions[i3] = Math.cos(angle) * radius;
-        ringPositions[i3 + 1] = Math.sin(angle) * radius;
-        ringPositions[i3 + 2] = 0;
-
-        ringHomePositions[i3] = ringPositions[i3];
-        ringHomePositions[i3 + 1] = ringPositions[i3 + 1];
-        ringHomePositions[i3 + 2] = 0;
-
-        const t = i / segments;
+      // Assign colors based on vertex angle
+      for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const y = positions[i + 1];
+        const angle = Math.atan2(y, x);
+        const t = (angle + Math.PI) / (2 * Math.PI);
         const [r, g, b] = getRingColor(t);
-        ringColors[i3] = r;
-        ringColors[i3 + 1] = g;
-        ringColors[i3 + 2] = b;
+        colors[i] = r;
+        colors[i + 1] = g;
+        colors[i + 2] = b;
       }
 
-      ringGeometry.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
-      ringGeometry.setAttribute('color', new THREE.BufferAttribute(ringColors, 3));
+      ringGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
       ringMaterial = new THREE.ShaderMaterial({
         uniforms: {
@@ -1194,16 +1194,46 @@
           uDisplacement: { value: CONFIG.ringDisplacement },
           uSaturation: { value: CONFIG.colorSaturation },
           uHueShift: { value: CONFIG.hueShift },
-          uLowFreq: { value: 0 }
+          uLowFreq: { value: 0 },
+          uBreathingIntensity: { value: CONFIG.breathingIntensity }
         },
         vertexShader: `
+          uniform float uTime;
+          uniform float uAudioLevel;
+          uniform float uDisplacement;
+          uniform float uLowFreq;
+          uniform float uBreathingIntensity;
+
           attribute vec3 color;
           varying vec3 vColor;
+          varying vec3 vNormal;
 
           void main() {
             vColor = color;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            gl_PointSize = 3.0;
+            vNormal = normalMatrix * normal;
+
+            // Get angle for displacement calculation
+            float angle = atan(position.y, position.x);
+            float baseRadius = length(position.xy);
+
+            // Idle undulation
+            float idleWave = sin(angle * 3.0 + uTime * 0.5) * 0.02 +
+                            sin(angle * 5.0 - uTime * 0.3) * 0.01;
+            float radiusOffset = idleWave * uBreathingIntensity;
+
+            // Audio reactive displacement
+            float audioWave = sin(angle * 2.0 + uTime * 2.0) * uLowFreq * 0.15 +
+                             sin(angle * 4.0 - uTime * 3.0) * uAudioLevel * 0.1 +
+                             sin(angle * 8.0 + uTime * 5.0) * uAudioLevel * 0.05;
+            radiusOffset += audioWave * uDisplacement;
+
+            // Apply radial displacement
+            vec3 displaced = position;
+            float scale = 1.0 + radiusOffset / baseRadius;
+            displaced.x *= scale;
+            displaced.y *= scale;
+
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
           }
         `,
         fragmentShader: `
@@ -1212,6 +1242,7 @@
           uniform float uAudioLevel;
 
           varying vec3 vColor;
+          varying vec3 vNormal;
 
           vec3 rgb2hsv(vec3 c) {
             vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -1229,26 +1260,30 @@
           }
 
           void main() {
-            float dist = length(gl_PointCoord - vec2(0.5));
-            float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
-            float glow = exp(-dist * 2.0);
-
+            // Apply hue shift and saturation
             vec3 hsv = rgb2hsv(vColor);
             hsv.x = fract(hsv.x + uHueShift / 360.0);
             hsv.y *= uSaturation;
             vec3 color = hsv2rgb(hsv);
 
-            float emissive = 0.8 + glow * 0.1 + uAudioLevel * 0.2;
+            // Add glow/emissive based on audio
+            float emissive = 1.0 + uAudioLevel * 0.5;
+            vec3 finalColor = color * emissive;
 
-            gl_FragColor = vec4(color * emissive, alpha * 0.5);
+            // Fresnel-like edge glow
+            float fresnel = pow(1.0 - abs(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0))), 2.0);
+            finalColor += color * fresnel * 0.3;
+
+            gl_FragColor = vec4(finalColor, 0.9);
           }
         `,
         transparent: true,
         blending: THREE.AdditiveBlending,
-        depthWrite: false
+        depthWrite: false,
+        side: THREE.DoubleSide
       });
 
-      ring = new THREE.Points(ringGeometry, ringMaterial);
+      ring = new THREE.Mesh(ringGeometry, ringMaterial);
       scene.add(ring);
     }
 
@@ -1585,39 +1620,8 @@
     // ============================================
 
     function updateRing() {
-      const positions = ringGeometry.attributes.position.array;
-      const segments = positions.length / 3;
-      const radius = 1.1;
-
-      for (let i = 0; i < segments; i++) {
-        const angle = (i / segments) * Math.PI * 2;
-        const i3 = i * 3;
-
-        // Base position
-        let r = radius;
-
-        // Idle undulation
-        const idleWave = Math.sin(angle * 3 + time * 0.5) * 0.02 +
-                         Math.sin(angle * 5 - time * 0.3) * 0.01;
-        r += idleWave * CONFIG.breathingIntensity;
-
-        // Audio reactive displacement (mic/user drives ring)
-        if (smoothedMicLevel > 0.01) {
-          // Multiple sine waves for organic feel
-          const audioWave =
-            Math.sin(angle * 2 + time * 2) * smoothedMicBands.low * 0.15 +
-            Math.sin(angle * 4 - time * 3) * smoothedMicBands.mid * 0.1 +
-            Math.sin(angle * 8 + time * 5) * smoothedMicBands.high * 0.05;
-
-          r += audioWave * CONFIG.ringDisplacement;
-        }
-
-        // Quick attack, slower decay baked into smoothing
-        positions[i3] = Math.cos(angle) * r;
-        positions[i3 + 1] = Math.sin(angle) * r;
-      }
-
-      ringGeometry.attributes.position.needsUpdate = true;
+      // Ring displacement is now handled in the vertex shader
+      // Just update the uniforms which is done in animate()
     }
 
     function animate() {
@@ -1656,9 +1660,7 @@
       ringMaterial.uniforms.uDisplacement.value = CONFIG.ringDisplacement;
       ringMaterial.uniforms.uSaturation.value = CONFIG.colorSaturation;
       ringMaterial.uniforms.uHueShift.value = CONFIG.hueShift;
-
-      // Update ring geometry
-      updateRing();
+      ringMaterial.uniforms.uBreathingIntensity.value = CONFIG.breathingIntensity;
 
       // Rotate particle cloud
       particles.rotation.z += CONFIG.rotationSpeed * delta;
