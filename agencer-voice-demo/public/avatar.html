@@ -1,34 +1,13 @@
 <!DOCTYPE html>
 <!--
-  AGENCER AVATAR - Audio Reactive Three.js Presence
-  =================================================
+  AGENCER AVATAR v2 - Audio Reactive Three.js Presence
+  =====================================================
 
-  This component creates a luminous, soulful AI avatar visualization
-  using particle effects and audio reactivity.
-
-  USAGE:
-  1. Open this file in a modern browser
-  2. Click "Upload Logo Image" to load your logo (PNG with transparency works best)
-  3. Click "Enable Microphone" to let your voice control the ring
-  4. Click "Upload Audio Track" to load an audio file, or use the synthesized demo
-  5. Click "Play Agencer Voice" to animate the particles with audio
-
-  AUDIO MAPPING:
-  - Microphone input → Ring displacement (user speaking = ring reacts)
-  - Audio track → Particle animation (Agencer speaking = particles react)
-
-  CUSTOMIZATION:
-  - All visual parameters can be adjusted via the controls panel
-  - Presets can be saved to localStorage
-  - To embed a specific logo, set LOGO_BASE64 constant to your base64-encoded image
-  - To embed a specific audio track, set the <audio> element's src attribute
-
-  INTEGRATION:
-  To embed this in your application:
-  1. Include the Three.js dependencies
-  2. Copy the JavaScript module code
-  3. Call init() when ready
-  4. Access controls via window.agencerAvatar.CONFIG
+  A luminous, conscious AI avatar visualization with:
+  - Waveform ring that visualizes audio as waves ON the circle
+  - Particles that preserve exact colors from your logo
+  - 3D depth consciousness effect (shimmer, drift, breathing)
+  - Smooth audio reactivity with frequency-based responses
 
   The feeling: warm, intimate, aware. Like encountering a presence.
 -->
@@ -379,11 +358,6 @@
       display: flex;
     }
 
-    /* Logo image loader (hidden) */
-    #logo-loader {
-      display: none;
-    }
-
     /* Loading state */
     #loading {
       position: fixed;
@@ -453,7 +427,7 @@
         Upload Logo Image
       </button>
       <p style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 8px;">
-        Upload your logo to extract particles from it
+        Colors will be sampled directly from your logo
       </p>
     </div>
 
@@ -514,43 +488,48 @@
 
       <div class="control-row">
         <label>Particle Count</label>
-        <input type="range" id="particleCount" min="5000" max="15000" value="10000" step="500">
-        <span class="value" id="particleCount-val">10000</span>
+        <input type="range" id="particleCount" min="5000" max="25000" value="15000" step="1000">
+        <span class="value" id="particleCount-val">15000</span>
       </div>
 
       <div class="control-row">
         <label>Particle Size</label>
-        <input type="range" id="particleSize" min="0.5" max="5" value="1.5" step="0.25">
+        <input type="range" id="particleSize" min="0.5" max="4" value="1.5" step="0.1">
         <span class="value" id="particleSize-val">1.50</span>
       </div>
 
       <div class="control-row">
-        <label>Scatter Intensity</label>
-        <input type="range" id="scatterIntensity" min="0" max="2" value="1" step="0.05">
-        <span class="value" id="scatterIntensity-val">1.00</span>
-      </div>
-
-      <div class="control-row">
         <label>Breathing Intensity</label>
-        <input type="range" id="breathingIntensity" min="0" max="1" value="0.4" step="0.05">
-        <span class="value" id="breathingIntensity-val">0.40</span>
+        <input type="range" id="breathingIntensity" min="0" max="1" value="0.3" step="0.05">
+        <span class="value" id="breathingIntensity-val">0.30</span>
       </div>
 
       <div class="control-row">
-        <label>Rotation Speed</label>
-        <input type="range" id="rotationSpeed" min="0" max="0.2" value="0.02" step="0.01">
-        <span class="value" id="rotationSpeed-val">0.02</span>
+        <label>Depth Intensity</label>
+        <input type="range" id="depthIntensity" min="0" max="1" value="0.5" step="0.05">
+        <span class="value" id="depthIntensity-val">0.50</span>
       </div>
     </div>
 
     <!-- Ring Controls -->
     <div class="control-section">
-      <div class="section-title">Ring</div>
+      <div class="section-title">Ring Waveform</div>
 
       <div class="control-row">
-        <label>Ring Displacement</label>
-        <input type="range" id="ringDisplacement" min="0" max="1" value="0.5" step="0.05">
-        <span class="value" id="ringDisplacement-val">0.50</span>
+        <label>Wave Amplitude</label>
+        <input type="range" id="waveAmplitude" min="0" max="100" value="30" step="5">
+        <span class="value" id="waveAmplitude-val">30</span>
+      </div>
+    </div>
+
+    <!-- Audio Reactivity -->
+    <div class="control-section">
+      <div class="section-title">Audio Reactivity</div>
+
+      <div class="control-row">
+        <label>Audio Sensitivity</label>
+        <input type="range" id="audioSensitivity" min="0" max="1" value="0.7" step="0.05">
+        <span class="value" id="audioSensitivity-val">0.70</span>
       </div>
     </div>
 
@@ -560,37 +539,8 @@
 
       <div class="control-row">
         <label>Bloom Strength</label>
-        <input type="range" id="bloomStrength" min="0" max="2" value="0.5" step="0.1">
-        <span class="value" id="bloomStrength-val">0.50</span>
-      </div>
-
-      <div class="control-row">
-        <label>Bloom Threshold</label>
-        <input type="range" id="bloomThreshold" min="0" max="1" value="0.4" step="0.05">
-        <span class="value" id="bloomThreshold-val">0.40</span>
-      </div>
-
-      <div class="control-row">
-        <label>Bloom Radius</label>
-        <input type="range" id="bloomRadius" min="0.1" max="1.5" value="0.4" step="0.1">
-        <span class="value" id="bloomRadius-val">0.40</span>
-      </div>
-    </div>
-
-    <!-- Color Controls -->
-    <div class="control-section">
-      <div class="section-title">Color</div>
-
-      <div class="control-row">
-        <label>Color Saturation</label>
-        <input type="range" id="colorSaturation" min="0" max="1.5" value="1" step="0.05">
-        <span class="value" id="colorSaturation-val">1.00</span>
-      </div>
-
-      <div class="control-row">
-        <label>Hue Shift</label>
-        <input type="range" id="hueShift" min="0" max="360" value="0" step="5">
-        <span class="value" id="hueShift-val">0</span>
+        <input type="range" id="bloomStrength" min="0" max="1" value="0.4" step="0.05">
+        <span class="value" id="bloomStrength-val">0.40</span>
       </div>
     </div>
 
@@ -620,14 +570,9 @@
     </svg>
   </button>
 
-  <!-- Hidden image loader -->
-  <img id="logo-loader" crossorigin="anonymous">
-
-  <!-- Audio element for Agencer voice track -->
-  <!-- Replace this src with your actual audio file path or URL -->
   <audio id="agencer-audio" loop></audio>
 
-  <!-- Three.js and dependencies via CDN -->
+  <!-- Three.js via CDN -->
   <script type="importmap">
   {
     "imports": {
@@ -645,64 +590,54 @@
     import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
     // ============================================
-    // CONFIGURATION & STATE
+    // CONFIGURATION
     // ============================================
 
     const CONFIG = {
-      particleCount: 10000,
+      particleCount: 15000,
       particleSize: 1.5,
-      scatterIntensity: 1,
-      breathingIntensity: 0.4,
-      rotationSpeed: 0.02,
-      ringDisplacement: 0.5,
-      bloomStrength: 0.5,
-      bloomThreshold: 0.4,
-      bloomRadius: 0.4,
-      colorSaturation: 1,
-      hueShift: 0
+      breathingIntensity: 0.3,
+      depthIntensity: 0.5,
+      waveAmplitude: 30,
+      audioSensitivity: 0.7,
+      bloomStrength: 0.4
     };
 
     const DEFAULTS = { ...CONFIG };
 
+    // ============================================
+    // STATE
+    // ============================================
+
     let scene, camera, renderer, composer, bloomPass;
     let particles, particleGeometry, particleMaterial;
-    let ring, ringGeometry, ringMaterial;
+    let ringLine, ringGeometry, ringMaterial;
     let audioContext, micAnalyser, trackAnalyser;
     let micStream, micSource;
     let micEnabled = false, trackPlaying = false;
     let micData, trackData;
     let smoothedMicLevel = 0, smoothedTrackLevel = 0;
-    let smoothedMicBands = { low: 0, mid: 0, high: 0 };
-    let smoothedTrackBands = { low: 0, mid: 0, high: 0 };
+    let smoothedMicFFT = null, smoothedTrackFFT = null;
     let clock, time = 0;
-    let particlePositions, homePositions, particleColors, particleSizes;
-    let ringPositions, ringHomePositions;
     let logoParticleData = [];
-    let frameCount = 0, lastFpsTime = 0, fps = 0;
+    let frameCount = 0, lastFpsTime = 0;
+    let lastPulseFactor = 1;
+
+    const RING_SEGMENTS = 256;
+    const RING_BASE_RADIUS = 1.1;
 
     // ============================================
-    // LOGO PARSING
+    // LOGO PARSING - EXACT COLOR SAMPLING
     // ============================================
 
-    // ============================================
-    // LOGO CONFIGURATION
-    // ============================================
-    // Option 1: Set LOGO_URL to a path or URL to load your logo
-    // Option 2: Set LOGO_BASE64 to a base64-encoded data URL
-    // Option 3: Leave both as null to use procedural generation
-    // Option 4: Use the "Upload Logo Image" button at runtime
-
-    const LOGO_URL = 'agencer-logo.png'; // Try to load from this path first
-    const LOGO_BASE64 = null; // Or set to 'data:image/png;base64,...'
+    const LOGO_URL = 'agencer-logo.png';
 
     async function parseLogoImage(imageSource) {
       return new Promise((resolve) => {
-        // Try loading from various sources
-        const sourceToTry = imageSource || LOGO_BASE64 || LOGO_URL;
+        const sourceToTry = imageSource || LOGO_URL;
 
         if (!sourceToTry) {
-          // Generate procedural spiral particle data matching the Agencer logo style
-          console.log('No logo source found, using procedural generation');
+          console.log('No logo source, using procedural generation');
           resolve(generateProceduralLogoData());
           return;
         }
@@ -711,14 +646,15 @@
         img.crossOrigin = 'anonymous';
 
         img.onload = () => {
-          console.log('Logo image loaded successfully');
+          console.log('Logo loaded, sampling colors...');
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
+
+          // Use full resolution for better color sampling
           const size = Math.min(img.width, img.height, 512);
           canvas.width = size;
           canvas.height = size;
 
-          // Draw centered and scaled
           const scale = size / Math.max(img.width, img.height);
           const w = img.width * scale;
           const h = img.height * scale;
@@ -727,42 +663,51 @@
 
           ctx.drawImage(img, x, y, w, h);
           const imageData = ctx.getImageData(0, 0, size, size);
-          const data = imageData.data;
+          const pixels = imageData.data;
 
           const candidates = [];
+          const centerX = size / 2;
+          const centerY = size / 2;
 
+          // Sample ALL non-transparent pixels with their EXACT colors
           for (let py = 0; py < size; py++) {
             for (let px = 0; px < size; px++) {
               const i = (py * size + px) * 4;
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              const a = data[i + 3];
+              const r = pixels[i];
+              const g = pixels[i + 1];
+              const b = pixels[i + 2];
+              const a = pixels[i + 3];
 
-              if (a > 50) {
-                // Normalize position to -1 to 1 range
-                const nx = (px / size - 0.5) * 2;
-                const ny = (0.5 - py / size) * 2;
+              // Skip transparent pixels
+              if (a < 50) continue;
 
-                candidates.push({
-                  x: nx,
-                  y: ny,
-                  r: r / 255,
-                  g: g / 255,
-                  b: b / 255
-                });
-              }
+              // Position relative to center, normalized to -1 to 1
+              const nx = (px - centerX) / centerX;
+              const ny = (centerY - py) / centerY;
+
+              candidates.push({
+                x: nx,
+                y: ny,
+                // EXACT colors from the image - this is critical!
+                r: r / 255,
+                g: g / 255,
+                b: b / 255,
+                // Store for animation
+                phase: Math.random() * Math.PI * 2
+              });
             }
           }
 
-          // Randomly sample down to target count
+          // Shuffle and sample
           const shuffled = candidates.sort(() => Math.random() - 0.5);
-          console.log(`Parsed ${candidates.length} pixels, sampled ${CONFIG.particleCount} particles`);
-          resolve(shuffled.slice(0, CONFIG.particleCount));
+          const result = shuffled.slice(0, CONFIG.particleCount);
+
+          console.log(`Sampled ${result.length} particles with exact colors from ${candidates.length} pixels`);
+          resolve(result);
         };
 
         img.onerror = () => {
-          console.log('Could not load logo from', sourceToTry, '- using procedural generation');
+          console.log('Could not load logo, using procedural generation');
           resolve(generateProceduralLogoData());
         };
 
@@ -771,24 +716,22 @@
     }
 
     function generateProceduralLogoData() {
-      // Generate a colorful spiral pattern matching the Agencer logo aesthetic
+      // Generate colorful spiral matching Agencer aesthetic
       const particles = [];
       const count = CONFIG.particleCount;
 
-      // Color palette based on the logo (rainbow spiral)
       const colorStops = [
-        { angle: 0, color: [0.9, 0.2, 0.6] },      // Magenta/Pink
-        { angle: 60, color: [1.0, 0.3, 0.3] },     // Red
-        { angle: 120, color: [1.0, 0.6, 0.1] },    // Orange
-        { angle: 180, color: [0.9, 0.9, 0.2] },    // Yellow
-        { angle: 240, color: [0.3, 0.9, 0.4] },    // Green
-        { angle: 300, color: [0.2, 0.8, 0.9] },    // Cyan
-        { angle: 360, color: [0.3, 0.4, 0.9] }     // Blue
+        { angle: 0, color: [0.9, 0.2, 0.6] },
+        { angle: 60, color: [1.0, 0.3, 0.3] },
+        { angle: 120, color: [1.0, 0.6, 0.1] },
+        { angle: 180, color: [0.9, 0.9, 0.2] },
+        { angle: 240, color: [0.3, 0.9, 0.4] },
+        { angle: 300, color: [0.2, 0.8, 0.9] },
+        { angle: 360, color: [0.9, 0.2, 0.6] }
       ];
 
       function getColorAtAngle(angle) {
         angle = ((angle % 360) + 360) % 360;
-
         for (let i = 0; i < colorStops.length - 1; i++) {
           if (angle >= colorStops[i].angle && angle < colorStops[i + 1].angle) {
             const t = (angle - colorStops[i].angle) / (colorStops[i + 1].angle - colorStops[i].angle);
@@ -802,46 +745,35 @@
         return colorStops[0].color;
       }
 
-      // Create spiral arms with swirl effect
       const arms = 8;
-      const spiralTightness = 0.15;
       const maxRadius = 0.85;
 
       for (let i = 0; i < count; i++) {
-        // Distribute particles along spiral arms
         const armIndex = i % arms;
         const armOffset = (armIndex / arms) * Math.PI * 2;
-        const progress = Math.pow(Math.random(), 0.7); // More particles toward center
+        const progress = Math.pow(Math.random(), 0.7);
 
         const baseAngle = progress * Math.PI * 4 + armOffset;
-        const radius = progress * maxRadius;
-
-        // Add swirl effect
         const swirlAngle = baseAngle + progress * Math.PI * 2;
-
-        // Add some randomness
         const angleNoise = (Math.random() - 0.5) * 0.3;
         const radiusNoise = (Math.random() - 0.5) * 0.08;
 
         const finalAngle = swirlAngle + angleNoise;
-        const finalRadius = radius + radiusNoise;
+        const finalRadius = progress * maxRadius + radiusNoise;
 
         const x = Math.cos(finalAngle) * finalRadius;
         const y = Math.sin(finalAngle) * finalRadius;
 
-        // Color based on angle
         const colorAngle = ((finalAngle * 180 / Math.PI) + 180) % 360;
         const [r, g, b] = getColorAtAngle(colorAngle);
-
-        // Add brightness variation
         const brightness = 0.8 + Math.random() * 0.4;
 
         particles.push({
-          x: x,
-          y: y,
+          x, y,
           r: Math.min(1, r * brightness),
           g: Math.min(1, g * brightness),
-          b: Math.min(1, b * brightness)
+          b: Math.min(1, b * brightness),
+          phase: Math.random() * Math.PI * 2
         });
       }
 
@@ -849,280 +781,167 @@
     }
 
     // ============================================
-    // THREE.JS SETUP
+    // INITIALIZATION
     // ============================================
 
     async function init() {
-      // Parse logo
-      logoParticleData = await parseLogoImage(LOGO_BASE64);
+      logoParticleData = await parseLogoImage(null);
 
-      // Scene
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x0a0a0f);
 
-      // Camera
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
       camera.position.z = 3;
 
-      // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-      // Create particles
       createParticles();
-
-      // Create ring
       createRing();
-
-      // Post-processing
       setupPostProcessing();
-
-      // Audio
       setupAudio();
-
-      // Controls
       setupControls();
 
-      // Clock
       clock = new THREE.Clock();
-
-      // Window resize
       window.addEventListener('resize', onWindowResize);
 
-      // Hide loading screen
       setTimeout(() => {
         document.getElementById('loading').classList.add('hidden');
       }, 500);
 
-      // Start animation loop
       animate();
     }
 
+    // ============================================
+    // PARTICLE SYSTEM - 3D CONSCIOUSNESS EFFECT
+    // ============================================
+
     function createParticles() {
       const count = logoParticleData.length;
-
       particleGeometry = new THREE.BufferGeometry();
 
-      particlePositions = new Float32Array(count * 3);
-      homePositions = new Float32Array(count * 3);
-      particleColors = new Float32Array(count * 3);
-      particleSizes = new Float32Array(count);
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const sizes = new Float32Array(count);
+      const phases = new Float32Array(count);
+      const homePositions = new Float32Array(count * 3);
 
       for (let i = 0; i < count; i++) {
-        const particle = logoParticleData[i];
+        const p = logoParticleData[i];
         const i3 = i * 3;
 
-        // Position (start at home)
-        particlePositions[i3] = particle.x;
-        particlePositions[i3 + 1] = particle.y;
-        particlePositions[i3 + 2] = (Math.random() - 0.5) * 0.1; // Slight z variation
+        positions[i3] = p.x;
+        positions[i3 + 1] = p.y;
+        positions[i3 + 2] = 0;
 
-        // Home position
-        homePositions[i3] = particle.x;
-        homePositions[i3 + 1] = particle.y;
-        homePositions[i3 + 2] = particlePositions[i3 + 2];
+        homePositions[i3] = p.x;
+        homePositions[i3 + 1] = p.y;
+        homePositions[i3 + 2] = 0;
 
-        // Color
-        particleColors[i3] = particle.r;
-        particleColors[i3 + 1] = particle.g;
-        particleColors[i3 + 2] = particle.b;
+        // EXACT colors from logo
+        colors[i3] = p.r;
+        colors[i3 + 1] = p.g;
+        colors[i3 + 2] = p.b;
 
-        // Size
-        particleSizes[i] = 0.5 + Math.random() * 0.5;
+        sizes[i] = 0.5 + Math.random() * 0.5;
+        phases[i] = p.phase || Math.random() * Math.PI * 2;
       }
 
-      particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       particleGeometry.setAttribute('homePosition', new THREE.BufferAttribute(homePositions, 3));
-      particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-      particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+      particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      particleGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+      particleGeometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
 
-      // Shader material
       particleMaterial = new THREE.ShaderMaterial({
         uniforms: {
           uTime: { value: 0 },
           uSize: { value: CONFIG.particleSize },
           uPixelRatio: { value: renderer.getPixelRatio() },
           uAudioLevel: { value: 0 },
-          uScatterIntensity: { value: CONFIG.scatterIntensity },
+          uBassLevel: { value: 0 },
           uBreathingIntensity: { value: CONFIG.breathingIntensity },
-          uSaturation: { value: CONFIG.colorSaturation },
-          uHueShift: { value: CONFIG.hueShift },
-          uMidFreq: { value: 0 },
-          uHighFreq: { value: 0 }
+          uDepthIntensity: { value: CONFIG.depthIntensity },
+          uPulseFactor: { value: 1 }
         },
         vertexShader: `
           uniform float uTime;
           uniform float uSize;
           uniform float uPixelRatio;
           uniform float uAudioLevel;
-          uniform float uScatterIntensity;
+          uniform float uBassLevel;
           uniform float uBreathingIntensity;
-          uniform float uMidFreq;
-          uniform float uHighFreq;
+          uniform float uDepthIntensity;
+          uniform float uPulseFactor;
 
           attribute vec3 homePosition;
           attribute float size;
           attribute vec3 color;
+          attribute float phase;
 
           varying vec3 vColor;
-          varying float vAlpha;
-
-          // Simplex noise functions
-          vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-          vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-          vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-          float snoise(vec3 v) {
-            const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-            const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-
-            vec3 i  = floor(v + dot(v, C.yyy));
-            vec3 x0 = v - i + dot(i, C.xxx);
-
-            vec3 g = step(x0.yzx, x0.xyz);
-            vec3 l = 1.0 - g;
-            vec3 i1 = min(g.xyz, l.zxy);
-            vec3 i2 = max(g.xyz, l.zxy);
-
-            vec3 x1 = x0 - i1 + C.xxx;
-            vec3 x2 = x0 - i2 + C.yyy;
-            vec3 x3 = x0 - D.yyy;
-
-            i = mod289(i);
-            vec4 p = permute(permute(permute(
-                     i.z + vec4(0.0, i1.z, i2.z, 1.0))
-                   + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-                   + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-
-            float n_ = 0.142857142857;
-            vec3 ns = n_ * D.wyz - D.xzx;
-
-            vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-
-            vec4 x_ = floor(j * ns.z);
-            vec4 y_ = floor(j - 7.0 * x_);
-
-            vec4 x = x_ *ns.x + ns.yyyy;
-            vec4 y = y_ *ns.x + ns.yyyy;
-            vec4 h = 1.0 - abs(x) - abs(y);
-
-            vec4 b0 = vec4(x.xy, y.xy);
-            vec4 b1 = vec4(x.zw, y.zw);
-
-            vec4 s0 = floor(b0)*2.0 + 1.0;
-            vec4 s1 = floor(b1)*2.0 + 1.0;
-            vec4 sh = -step(h, vec4(0.0));
-
-            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-            vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-
-            vec3 p0 = vec3(a0.xy, h.x);
-            vec3 p1 = vec3(a0.zw, h.y);
-            vec3 p2 = vec3(a1.xy, h.z);
-            vec3 p3 = vec3(a1.zw, h.w);
-
-            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-            p0 *= norm.x;
-            p1 *= norm.y;
-            p2 *= norm.z;
-            p3 *= norm.w;
-
-            vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-            m = m * m;
-            return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-          }
+          varying float vBrightness;
 
           void main() {
             vec3 pos = homePosition;
 
-            // Breathing animation (3D Perlin noise displacement)
-            float breathingTime = uTime * 0.3;
-            vec3 noiseCoord = pos * 2.0 + vec3(breathingTime);
-            float noiseVal = snoise(noiseCoord);
-            float noiseVal2 = snoise(noiseCoord * 1.5 + 100.0);
-            float noiseVal3 = snoise(noiseCoord * 0.7 + 200.0);
+            // 1. Gentle Z oscillation (depth shimmer) - creates "consciousness" effect
+            float zOscillation = sin(uTime * 0.5 + phase) * 0.1 * uDepthIntensity;
 
-            vec3 breathOffset = vec3(
-              noiseVal * 0.05,
-              noiseVal2 * 0.05,
-              noiseVal3 * 0.03
-            ) * uBreathingIntensity;
+            // 2. Audio-reactive Z push (particles "jump" toward camera on loud sounds)
+            float audioPush = uAudioLevel * 0.2 * uDepthIntensity;
 
-            // Audio-reactive scatter
-            float distFromCenter = length(homePosition.xy);
-            vec3 scatterDir = normalize(vec3(homePosition.xy, 0.0) + vec3(0.001));
-            float scatterAmount = uAudioLevel * uScatterIntensity * (0.3 + distFromCenter * 0.7);
+            pos.z = zOscillation + audioPush;
 
-            // Mid frequency adds radial pulse
-            scatterAmount += uMidFreq * 0.15 * uScatterIntensity;
+            // 3. Perspective based on Z (closer = bigger/brighter)
+            float zScale = 1.0 + pos.z * 0.3;
+            vBrightness = 1.0 + pos.z * 0.2;
 
-            vec3 scatterOffset = scatterDir * scatterAmount * 0.3;
+            // 4. Gentle XY drift (organic floating feel)
+            float driftX = sin(uTime * 0.3 + phase * 2.0) * 0.02 * uBreathingIntensity;
+            float driftY = cos(uTime * 0.4 + phase * 3.0) * 0.02 * uBreathingIntensity;
 
-            // High frequency adds shimmer to z position
-            float shimmer = uHighFreq * 0.1 * sin(uTime * 10.0 + homePosition.x * 20.0);
+            // 5. Bass pulse (particles push outward on bass)
+            float pulse = uPulseFactor;
 
-            // Combine positions
-            pos = pos + breathOffset + scatterOffset;
-            pos.z += shimmer;
+            pos.x = homePosition.x * pulse * zScale + driftX;
+            pos.y = homePosition.y * pulse * zScale + driftY;
 
-            // Transform
+            // 6. Audio brightness boost
+            vBrightness += uAudioLevel * 0.3;
+
             vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
             gl_Position = projectionMatrix * mvPosition;
 
-            // Size with audio and high freq variation
-            float audioSizeBoost = 1.0 + uAudioLevel * 0.3 + uHighFreq * 0.15;
-            gl_PointSize = size * uSize * uPixelRatio * audioSizeBoost * (50.0 / -mvPosition.z);
+            // Size with depth perspective
+            float depthSize = zScale * (1.0 + uAudioLevel * 0.2);
+            gl_PointSize = size * uSize * uPixelRatio * depthSize * (50.0 / -mvPosition.z);
 
-            // Pass color and alpha
             vColor = color;
-            vAlpha = 0.7 + uAudioLevel * 0.2;
           }
         `,
         fragmentShader: `
-          uniform float uSaturation;
-          uniform float uHueShift;
-          uniform float uAudioLevel;
-
           varying vec3 vColor;
-          varying float vAlpha;
-
-          vec3 rgb2hsv(vec3 c) {
-            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-            float d = q.x - min(q.w, q.y);
-            float e = 1.0e-10;
-            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-          }
-
-          vec3 hsv2rgb(vec3 c) {
-            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-          }
+          varying float vBrightness;
 
           void main() {
-            // Soft radial gradient circle
-            float dist = length(gl_PointCoord - vec2(0.5));
-            float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+            // Soft circular particle with glow halo
+            vec2 center = gl_PointCoord - vec2(0.5);
+            float dist = length(center);
 
-            // Glow effect
-            float glow = exp(-dist * 3.0);
+            // Soft falloff
+            float alpha = 1.0 - smoothstep(0.3, 0.5, dist);
 
-            // Apply hue shift and saturation
-            vec3 hsv = rgb2hsv(vColor);
-            hsv.x = fract(hsv.x + uHueShift / 360.0);
-            hsv.y *= uSaturation;
-            vec3 color = hsv2rgb(hsv);
+            // Glow halo
+            float glow = exp(-dist * 4.0) * 0.5;
+            alpha += glow;
 
-            // Moderate emissive for visible particles with glow
-            float emissiveBoost = 0.9 + glow * 0.15 + uAudioLevel * 0.15;
+            // Apply exact logo colors with brightness modulation
+            vec3 finalColor = vColor * vBrightness;
 
-            // Balanced alpha - visible particles without white-out
-            gl_FragColor = vec4(color * emissiveBoost, alpha * vAlpha * 0.5);
+            gl_FragColor = vec4(finalColor, alpha * 0.7);
           }
         `,
         transparent: true,
@@ -1134,223 +953,112 @@
       scene.add(particles);
     }
 
+    // ============================================
+    // RING WAVEFORM - FFT VISUALIZATION
+    // ============================================
+
     function createRing() {
-      // Use TorusGeometry for a solid continuous ring
-      const radius = 1.1;
-      const tubeRadius = 0.015; // Thickness of the ring
-      const radialSegments = 64;
-      const tubularSegments = 128;
+      ringGeometry = new THREE.BufferGeometry();
 
-      ringGeometry = new THREE.TorusGeometry(radius, tubeRadius, radialSegments, tubularSegments);
+      const positions = new Float32Array(RING_SEGMENTS * 3);
+      const colors = new Float32Array(RING_SEGMENTS * 3);
 
-      // Store base positions for displacement animation
-      ringHomePositions = new Float32Array(ringGeometry.attributes.position.array);
-
-      // Add vertex colors based on angle
-      const positions = ringGeometry.attributes.position.array;
-      const colors = new Float32Array(positions.length);
-
-      // Ring color gradient (yellow -> green -> cyan from the logo edge)
-      const ringColorStops = [
-        { t: 0, color: [0.9, 0.9, 0.2] },       // Yellow
-        { t: 0.33, color: [0.3, 0.9, 0.4] },    // Green
-        { t: 0.66, color: [0.2, 0.8, 0.9] },    // Cyan
-        { t: 1, color: [0.9, 0.9, 0.2] }        // Back to yellow
+      // Color gradient for ring (yellow -> green -> cyan)
+      const ringColors = [
+        { t: 0, color: [0.9, 0.9, 0.2] },
+        { t: 0.33, color: [0.3, 0.9, 0.4] },
+        { t: 0.66, color: [0.2, 0.8, 0.9] },
+        { t: 1, color: [0.9, 0.9, 0.2] }
       ];
 
       function getRingColor(t) {
-        t = ((t % 1) + 1) % 1; // Normalize to 0-1
-        for (let i = 0; i < ringColorStops.length - 1; i++) {
-          if (t >= ringColorStops[i].t && t <= ringColorStops[i + 1].t) {
-            const localT = (t - ringColorStops[i].t) / (ringColorStops[i + 1].t - ringColorStops[i].t);
+        t = ((t % 1) + 1) % 1;
+        for (let i = 0; i < ringColors.length - 1; i++) {
+          if (t >= ringColors[i].t && t <= ringColors[i + 1].t) {
+            const lt = (t - ringColors[i].t) / (ringColors[i + 1].t - ringColors[i].t);
             return [
-              ringColorStops[i].color[0] + (ringColorStops[i + 1].color[0] - ringColorStops[i].color[0]) * localT,
-              ringColorStops[i].color[1] + (ringColorStops[i + 1].color[1] - ringColorStops[i].color[1]) * localT,
-              ringColorStops[i].color[2] + (ringColorStops[i + 1].color[2] - ringColorStops[i].color[2]) * localT
+              ringColors[i].color[0] + (ringColors[i + 1].color[0] - ringColors[i].color[0]) * lt,
+              ringColors[i].color[1] + (ringColors[i + 1].color[1] - ringColors[i].color[1]) * lt,
+              ringColors[i].color[2] + (ringColors[i + 1].color[2] - ringColors[i].color[2]) * lt
             ];
           }
         }
-        return ringColorStops[0].color;
+        return ringColors[0].color;
       }
 
-      // Assign colors based on vertex angle
-      for (let i = 0; i < positions.length; i += 3) {
-        const x = positions[i];
-        const y = positions[i + 1];
-        const angle = Math.atan2(y, x);
-        const t = (angle + Math.PI) / (2 * Math.PI);
+      for (let i = 0; i < RING_SEGMENTS; i++) {
+        const angle = (i / RING_SEGMENTS) * Math.PI * 2;
+        const i3 = i * 3;
+
+        positions[i3] = Math.cos(angle) * RING_BASE_RADIUS;
+        positions[i3 + 1] = Math.sin(angle) * RING_BASE_RADIUS;
+        positions[i3 + 2] = 0;
+
+        const t = i / RING_SEGMENTS;
         const [r, g, b] = getRingColor(t);
-        colors[i] = r;
-        colors[i + 1] = g;
-        colors[i + 2] = b;
+        colors[i3] = r;
+        colors[i3 + 1] = g;
+        colors[i3 + 2] = b;
       }
 
+      ringGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       ringGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-      ringMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: { value: 0 },
-          uAudioLevel: { value: 0 },
-          uDisplacement: { value: CONFIG.ringDisplacement },
-          uSaturation: { value: CONFIG.colorSaturation },
-          uHueShift: { value: CONFIG.hueShift },
-          uLowFreq: { value: 0 },
-          uBreathingIntensity: { value: CONFIG.breathingIntensity }
-        },
-        vertexShader: `
-          uniform float uTime;
-          uniform float uAudioLevel;
-          uniform float uDisplacement;
-          uniform float uLowFreq;
-          uniform float uBreathingIntensity;
-
-          attribute vec3 color;
-          varying vec3 vColor;
-          varying vec3 vNormal;
-
-          void main() {
-            vColor = color;
-            vNormal = normalMatrix * normal;
-
-            // Get angle for displacement calculation
-            float angle = atan(position.y, position.x);
-            float baseRadius = length(position.xy);
-
-            // Idle undulation
-            float idleWave = sin(angle * 3.0 + uTime * 0.5) * 0.02 +
-                            sin(angle * 5.0 - uTime * 0.3) * 0.01;
-            float radiusOffset = idleWave * uBreathingIntensity;
-
-            // Audio reactive displacement
-            float audioWave = sin(angle * 2.0 + uTime * 2.0) * uLowFreq * 0.15 +
-                             sin(angle * 4.0 - uTime * 3.0) * uAudioLevel * 0.1 +
-                             sin(angle * 8.0 + uTime * 5.0) * uAudioLevel * 0.05;
-            radiusOffset += audioWave * uDisplacement;
-
-            // Apply radial displacement
-            vec3 displaced = position;
-            float scale = 1.0 + radiusOffset / baseRadius;
-            displaced.x *= scale;
-            displaced.y *= scale;
-
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
-          }
-        `,
-        fragmentShader: `
-          uniform float uSaturation;
-          uniform float uHueShift;
-          uniform float uAudioLevel;
-
-          varying vec3 vColor;
-          varying vec3 vNormal;
-
-          vec3 rgb2hsv(vec3 c) {
-            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-            float d = q.x - min(q.w, q.y);
-            float e = 1.0e-10;
-            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-          }
-
-          vec3 hsv2rgb(vec3 c) {
-            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-          }
-
-          void main() {
-            // Apply hue shift and saturation
-            vec3 hsv = rgb2hsv(vColor);
-            hsv.x = fract(hsv.x + uHueShift / 360.0);
-            hsv.y *= uSaturation;
-            vec3 color = hsv2rgb(hsv);
-
-            // Add glow/emissive based on audio
-            float emissive = 1.0 + uAudioLevel * 0.5;
-            vec3 finalColor = color * emissive;
-
-            // Fresnel-like edge glow
-            float fresnel = pow(1.0 - abs(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0))), 2.0);
-            finalColor += color * fresnel * 0.3;
-
-            gl_FragColor = vec4(finalColor, 0.9);
-          }
-        `,
+      ringMaterial = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        linewidth: 2,
         transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide
+        opacity: 0.9
       });
 
-      ring = new THREE.Mesh(ringGeometry, ringMaterial);
-      scene.add(ring);
+      ringLine = new THREE.LineLoop(ringGeometry, ringMaterial);
+      scene.add(ringLine);
     }
 
-    // Chromatic Aberration Shader
-    const ChromaticAberrationShader = {
-      uniforms: {
-        tDiffuse: { value: null },
-        uIntensity: { value: 0.002 },
-        uTime: { value: 0 }
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform float uIntensity;
-        uniform float uTime;
-        varying vec2 vUv;
+    function updateRingWaveform() {
+      const positions = ringGeometry.attributes.position.array;
+      const fftData = smoothedMicFFT || new Float32Array(128);
+      const waveAmp = CONFIG.waveAmplitude / 1000; // Convert to world units
 
-        void main() {
-          vec2 center = vec2(0.5);
-          vec2 dir = vUv - center;
-          float dist = length(dir);
+      for (let i = 0; i < RING_SEGMENTS; i++) {
+        const angle = (i / RING_SEGMENTS) * Math.PI * 2;
+        const i3 = i * 3;
 
-          // Only apply at edges
-          float edgeFactor = smoothstep(0.2, 0.7, dist);
-          float offset = uIntensity * edgeFactor;
+        // Map ring position to FFT bin
+        const fftBin = Math.floor((i / RING_SEGMENTS) * fftData.length);
+        const fftValue = fftData[fftBin] || 0;
 
-          // Subtle time-based variation
-          offset *= 1.0 + sin(uTime * 0.5) * 0.1;
+        // Bipolar displacement: wave goes BOTH inward and outward
+        // Normalize to -0.5 to 0.5 range, then scale
+        const displacement = (fftValue - 0.5) * 2 * waveAmp * CONFIG.audioSensitivity;
 
-          vec2 rOffset = dir * offset;
-          vec2 bOffset = -dir * offset;
+        // Idle wave (subtle traveling wave when no audio)
+        const idleWave = Math.sin(angle * 3 + time * 0.5) * 0.01 * CONFIG.breathingIntensity;
 
-          float r = texture2D(tDiffuse, vUv + rOffset).r;
-          float g = texture2D(tDiffuse, vUv).g;
-          float b = texture2D(tDiffuse, vUv + bOffset).b;
-          float a = texture2D(tDiffuse, vUv).a;
+        const radius = RING_BASE_RADIUS + displacement + idleWave;
 
-          gl_FragColor = vec4(r, g, b, a);
-        }
-      `
-    };
+        positions[i3] = Math.cos(angle) * radius;
+        positions[i3 + 1] = Math.sin(angle) * radius;
+      }
 
-    let chromaticPass;
+      ringGeometry.attributes.position.needsUpdate = true;
+    }
+
+    // ============================================
+    // POST PROCESSING
+    // ============================================
 
     function setupPostProcessing() {
       composer = new EffectComposer(renderer);
-
-      const renderPass = new RenderPass(scene, camera);
-      composer.addPass(renderPass);
+      composer.addPass(new RenderPass(scene, camera));
 
       bloomPass = new UnrealBloomPass(
         new THREE.Vector2(window.innerWidth, window.innerHeight),
         CONFIG.bloomStrength,
-        CONFIG.bloomRadius,
-        CONFIG.bloomThreshold
+        0.4,
+        0.3
       );
       composer.addPass(bloomPass);
-
-      // Chromatic aberration (subtle, at edges)
-      chromaticPass = new ShaderPass(ChromaticAberrationShader);
-      composer.addPass(chromaticPass);
     }
 
     // ============================================
@@ -1360,6 +1068,8 @@
     function setupAudio() {
       micData = new Uint8Array(128);
       trackData = new Uint8Array(128);
+      smoothedMicFFT = new Float32Array(128);
+      smoothedTrackFFT = new Float32Array(128);
     }
 
     async function enableMicrophone() {
@@ -1376,6 +1086,7 @@
         micSource = audioContext.createMediaStreamSource(micStream);
         micAnalyser = audioContext.createAnalyser();
         micAnalyser.fftSize = 256;
+        micAnalyser.smoothingTimeConstant = 0.8;
         micSource.connect(micAnalyser);
 
         micData = new Uint8Array(micAnalyser.frequencyBinCount);
@@ -1392,10 +1103,9 @@
           </svg>
           Disable Microphone
         `;
-
       } catch (err) {
         console.error('Microphone access denied:', err);
-        alert('Microphone access was denied. Please allow microphone access to use this feature.');
+        alert('Microphone access was denied.');
       }
     }
 
@@ -1421,7 +1131,7 @@
       `;
     }
 
-    // Synthesized demo audio generator (used when no audio file is provided)
+    // Synth voice for demo
     let synthOscillators = [];
     let synthGain = null;
     let usingSynthAudio = false;
@@ -1429,28 +1139,21 @@
     function createSynthVoice() {
       if (!audioContext) return;
 
-      // Create a complex tone that simulates speech-like patterns
       const masterGain = audioContext.createGain();
       masterGain.gain.value = 0;
       masterGain.connect(trackAnalyser);
-
       synthGain = masterGain;
 
-      // Multiple oscillators for rich harmonic content
-      const frequencies = [120, 240, 360, 480, 600]; // Fundamental + harmonics
-
+      const frequencies = [120, 240, 360, 480, 600];
       frequencies.forEach((freq, i) => {
         const osc = audioContext.createOscillator();
         const oscGain = audioContext.createGain();
-
         osc.type = i === 0 ? 'sawtooth' : 'sine';
         osc.frequency.value = freq;
-        oscGain.gain.value = 1 / (i + 1); // Decreasing amplitude for harmonics
-
+        oscGain.gain.value = 1 / (i + 1);
         osc.connect(oscGain);
         oscGain.connect(masterGain);
         osc.start();
-
         synthOscillators.push({ osc, gain: oscGain });
       });
 
@@ -1460,20 +1163,11 @@
     function animateSynthVoice() {
       if (!usingSynthAudio || !trackPlaying || !synthGain) return;
 
-      // Simulate speech patterns with varying amplitude and frequency
       const t = audioContext.currentTime;
-
-      // Speech-like amplitude envelope
-      const speechPattern =
-        Math.sin(t * 3) * 0.3 +
-        Math.sin(t * 7) * 0.2 +
-        Math.sin(t * 13) * 0.15 +
-        Math.random() * 0.1;
-
+      const speechPattern = Math.sin(t * 3) * 0.3 + Math.sin(t * 7) * 0.2 + Math.sin(t * 13) * 0.15 + Math.random() * 0.1;
       const volume = Math.max(0, Math.min(1, 0.3 + speechPattern * 0.4));
       synthGain.gain.setTargetAtTime(volume * 0.15, t, 0.05);
 
-      // Vary frequencies slightly for more natural sound
       synthOscillators.forEach((item, i) => {
         const baseFreq = [120, 240, 360, 480, 600][i];
         const variation = Math.sin(t * (2 + i)) * 10;
@@ -1502,24 +1196,21 @@
         await audioContext.resume();
       }
 
-      // Setup analyser if not done
       if (!trackAnalyser) {
         trackAnalyser = audioContext.createAnalyser();
         trackAnalyser.fftSize = 256;
+        trackAnalyser.smoothingTimeConstant = 0.8;
         trackAnalyser.connect(audioContext.destination);
         trackData = new Uint8Array(trackAnalyser.frequencyBinCount);
       }
 
-      // Check if we have a real audio source
       const hasAudioSource = audio.src && audio.src !== window.location.href;
 
       if (!hasAudioSource && !usingSynthAudio) {
-        // Use synthesized audio demo
         createSynthVoice();
       }
 
       if (hasAudioSource && !audio._connected) {
-        // Connect real audio element
         const trackSource = audioContext.createMediaElementSource(audio);
         trackSource.connect(trackAnalyser);
         audio._connected = true;
@@ -1556,54 +1247,55 @@
     }
 
     function getAudioData() {
-      // Get microphone data
+      const sensitivity = CONFIG.audioSensitivity;
+
+      // Mic data - drives ring waveform
       if (micEnabled && micAnalyser) {
         micAnalyser.getByteFrequencyData(micData);
 
-        // Calculate bands
-        let low = 0, mid = 0, high = 0;
-        for (let i = 0; i < 10; i++) low += micData[i];
-        for (let i = 10; i < 40; i++) mid += micData[i];
-        for (let i = 40; i < micData.length; i++) high += micData[i];
+        // Smooth FFT for ring
+        for (let i = 0; i < micData.length; i++) {
+          const target = micData[i] / 255;
+          smoothedMicFFT[i] = lerp(smoothedMicFFT[i], target, 0.2);
+        }
 
-        low = (low / 10) / 255;
-        mid = (mid / 30) / 255;
-        high = (high / (micData.length - 40)) / 255;
-
-        // Smooth
-        smoothedMicBands.low = lerp(smoothedMicBands.low, low, 0.15);
-        smoothedMicBands.mid = lerp(smoothedMicBands.mid, mid, 0.15);
-        smoothedMicBands.high = lerp(smoothedMicBands.high, high, 0.15);
-        smoothedMicLevel = lerp(smoothedMicLevel, (low + mid + high) / 3, 0.15);
+        // Overall level
+        let sum = 0;
+        for (let i = 0; i < micData.length; i++) sum += micData[i];
+        smoothedMicLevel = lerp(smoothedMicLevel, (sum / micData.length / 255) * sensitivity, 0.15);
       } else {
         smoothedMicLevel = lerp(smoothedMicLevel, 0, 0.05);
-        smoothedMicBands.low = lerp(smoothedMicBands.low, 0, 0.05);
-        smoothedMicBands.mid = lerp(smoothedMicBands.mid, 0, 0.05);
-        smoothedMicBands.high = lerp(smoothedMicBands.high, 0, 0.05);
+        for (let i = 0; i < smoothedMicFFT.length; i++) {
+          smoothedMicFFT[i] = lerp(smoothedMicFFT[i], 0.5, 0.05); // Settle to center (no displacement)
+        }
       }
 
-      // Get track data
+      // Track data - drives particles
       if (trackPlaying && trackAnalyser) {
         trackAnalyser.getByteFrequencyData(trackData);
 
-        let low = 0, mid = 0, high = 0;
-        for (let i = 0; i < 10; i++) low += trackData[i];
-        for (let i = 10; i < 40; i++) mid += trackData[i];
-        for (let i = 40; i < trackData.length; i++) high += trackData[i];
+        // Smooth FFT
+        for (let i = 0; i < trackData.length; i++) {
+          const target = trackData[i] / 255;
+          smoothedTrackFFT[i] = lerp(smoothedTrackFFT[i], target, 0.2);
+        }
 
-        low = (low / 10) / 255;
-        mid = (mid / 30) / 255;
-        high = (high / (trackData.length - 40)) / 255;
+        // Bass level (for pulse)
+        let bass = 0;
+        for (let i = 0; i < 10; i++) bass += trackData[i];
+        const bassLevel = (bass / 10 / 255) * sensitivity;
 
-        smoothedTrackBands.low = lerp(smoothedTrackBands.low, low, 0.15);
-        smoothedTrackBands.mid = lerp(smoothedTrackBands.mid, mid, 0.15);
-        smoothedTrackBands.high = lerp(smoothedTrackBands.high, high, 0.15);
-        smoothedTrackLevel = lerp(smoothedTrackLevel, (low + mid + high) / 3, 0.15);
+        // Calculate pulse factor with smoothing
+        const targetPulse = 1 + bassLevel * 0.15;
+        lastPulseFactor = lerp(lastPulseFactor, targetPulse, 0.1);
+
+        // Overall level
+        let sum = 0;
+        for (let i = 0; i < trackData.length; i++) sum += trackData[i];
+        smoothedTrackLevel = lerp(smoothedTrackLevel, (sum / trackData.length / 255) * sensitivity, 0.15);
       } else {
         smoothedTrackLevel = lerp(smoothedTrackLevel, 0, 0.05);
-        smoothedTrackBands.low = lerp(smoothedTrackBands.low, 0, 0.05);
-        smoothedTrackBands.mid = lerp(smoothedTrackBands.mid, 0, 0.05);
-        smoothedTrackBands.high = lerp(smoothedTrackBands.high, 0, 0.05);
+        lastPulseFactor = lerp(lastPulseFactor, 1, 0.05);
       }
 
       // Update meters
@@ -1616,13 +1308,8 @@
     }
 
     // ============================================
-    // ANIMATION
+    // ANIMATION LOOP
     // ============================================
-
-    function updateRing() {
-      // Ring displacement is now handled in the vertex shader
-      // Just update the uniforms which is done in animate()
-    }
 
     function animate() {
       requestAnimationFrame(animate);
@@ -1633,8 +1320,7 @@
       // FPS counter
       frameCount++;
       if (time - lastFpsTime >= 1) {
-        fps = Math.round(frameCount / (time - lastFpsTime));
-        document.getElementById('fps').textContent = fps + ' FPS';
+        document.getElementById('fps').textContent = Math.round(frameCount / (time - lastFpsTime)) + ' FPS';
         frameCount = 0;
         lastFpsTime = time;
       }
@@ -1644,43 +1330,18 @@
 
       // Update particle uniforms
       particleMaterial.uniforms.uTime.value = time;
-      particleMaterial.uniforms.uAudioLevel.value = smoothedTrackLevel; // Track drives particles
-      particleMaterial.uniforms.uMidFreq.value = smoothedTrackBands.mid;
-      particleMaterial.uniforms.uHighFreq.value = smoothedTrackBands.high;
+      particleMaterial.uniforms.uAudioLevel.value = smoothedTrackLevel;
+      particleMaterial.uniforms.uBassLevel.value = lastPulseFactor - 1;
       particleMaterial.uniforms.uSize.value = CONFIG.particleSize;
-      particleMaterial.uniforms.uScatterIntensity.value = CONFIG.scatterIntensity;
       particleMaterial.uniforms.uBreathingIntensity.value = CONFIG.breathingIntensity;
-      particleMaterial.uniforms.uSaturation.value = CONFIG.colorSaturation;
-      particleMaterial.uniforms.uHueShift.value = CONFIG.hueShift;
+      particleMaterial.uniforms.uDepthIntensity.value = CONFIG.depthIntensity;
+      particleMaterial.uniforms.uPulseFactor.value = lastPulseFactor;
 
-      // Update ring uniforms
-      ringMaterial.uniforms.uTime.value = time;
-      ringMaterial.uniforms.uAudioLevel.value = smoothedMicLevel; // Mic drives ring
-      ringMaterial.uniforms.uLowFreq.value = smoothedMicBands.low;
-      ringMaterial.uniforms.uDisplacement.value = CONFIG.ringDisplacement;
-      ringMaterial.uniforms.uSaturation.value = CONFIG.colorSaturation;
-      ringMaterial.uniforms.uHueShift.value = CONFIG.hueShift;
-      ringMaterial.uniforms.uBreathingIntensity.value = CONFIG.breathingIntensity;
-
-      // Rotate particle cloud
-      particles.rotation.z += CONFIG.rotationSpeed * delta;
-
-      // Subtle scale breathing
-      const breathScale = 1 + Math.sin(time * 0.5) * 0.02 * CONFIG.breathingIntensity;
-      particles.scale.setScalar(breathScale);
-      ring.scale.setScalar(breathScale);
+      // Update ring waveform
+      updateRingWaveform();
 
       // Update bloom
       bloomPass.strength = CONFIG.bloomStrength;
-      bloomPass.threshold = CONFIG.bloomThreshold;
-      bloomPass.radius = CONFIG.bloomRadius;
-
-      // Update chromatic aberration
-      if (chromaticPass) {
-        chromaticPass.uniforms.uTime.value = time;
-        // Increase chromatic aberration slightly with audio
-        chromaticPass.uniforms.uIntensity.value = 0.002 + smoothedTrackLevel * 0.003;
-      }
 
       // Render
       composer.render();
@@ -1701,8 +1362,7 @@
         if (file) {
           const reader = new FileReader();
           reader.onload = async (event) => {
-            const imageData = event.target.result;
-            await loadLogoFromImage(imageData);
+            await loadLogoFromImage(event.target.result);
           };
           reader.readAsDataURL(file);
         }
@@ -1717,12 +1377,10 @@
         const file = e.target.files[0];
         if (file) {
           const audio = document.getElementById('agencer-audio');
-          const url = URL.createObjectURL(file);
-          audio.src = url;
-          audio._connected = false; // Reset connection flag
+          audio.src = URL.createObjectURL(file);
+          audio._connected = false;
           usingSynthAudio = false;
 
-          // Clean up synth if it was being used
           synthOscillators.forEach(item => {
             item.osc.stop();
             item.osc.disconnect();
@@ -1730,17 +1388,15 @@
           synthOscillators = [];
           synthGain = null;
 
-          // Reset analyser
           if (trackAnalyser) {
             trackAnalyser.disconnect();
             trackAnalyser = null;
           }
 
-          console.log('Audio track loaded:', file.name);
+          console.log('Audio loaded:', file.name);
         }
       });
 
-      // Handle audio track ending (for non-looping tracks)
       document.getElementById('agencer-audio').addEventListener('ended', () => {
         if (!document.getElementById('agencer-audio').loop) {
           trackPlaying = false;
@@ -1753,132 +1409,105 @@
         }
       });
 
-      // Microphone button
       document.getElementById('mic-btn').addEventListener('click', () => {
-        if (micEnabled) {
-          disableMicrophone();
-        } else {
-          enableMicrophone();
-        }
+        micEnabled ? disableMicrophone() : enableMicrophone();
       });
 
-      // Track button
       document.getElementById('track-btn').addEventListener('click', toggleTrack);
 
       // Sliders
       const sliders = [
-        'particleCount', 'particleSize', 'scatterIntensity', 'breathingIntensity',
-        'rotationSpeed', 'ringDisplacement', 'bloomStrength', 'bloomThreshold',
-        'bloomRadius', 'colorSaturation', 'hueShift'
+        'particleCount', 'particleSize', 'breathingIntensity', 'depthIntensity',
+        'waveAmplitude', 'audioSensitivity', 'bloomStrength'
       ];
 
       sliders.forEach(id => {
         const slider = document.getElementById(id);
+        if (!slider) return;
+
         const valueDisplay = document.getElementById(id + '-val');
 
         slider.addEventListener('input', () => {
           const value = parseFloat(slider.value);
           CONFIG[id] = value;
 
-          // Format display value
-          if (id === 'particleCount' || id === 'hueShift') {
+          if (id === 'particleCount' || id === 'waveAmplitude') {
             valueDisplay.textContent = Math.round(value);
           } else {
             valueDisplay.textContent = value.toFixed(2);
           }
 
-          // Special handling for particle count (requires rebuild)
           if (id === 'particleCount') {
-            // Debounced rebuild
             clearTimeout(slider.rebuildTimeout);
-            slider.rebuildTimeout = setTimeout(() => {
-              rebuildParticles();
-            }, 500);
+            slider.rebuildTimeout = setTimeout(rebuildParticles, 500);
           }
         });
       });
 
-      // Preset buttons
+      // Presets
       document.querySelectorAll('.preset-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const presetIndex = parseInt(btn.dataset.preset);
-          loadPreset(presetIndex);
-
+          const index = parseInt(btn.dataset.preset);
+          loadPreset(index);
           document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
         });
       });
 
-      // Save preset
       document.getElementById('save-preset').addEventListener('click', () => {
-        const currentPresetBtn = document.querySelector('.preset-btn.active');
-        const presetIndex = currentPresetBtn ? parseInt(currentPresetBtn.dataset.preset) : 0;
-        savePreset(presetIndex);
-        alert(`Preset ${presetIndex + 1} saved!`);
+        const btn = document.querySelector('.preset-btn.active');
+        const index = btn ? parseInt(btn.dataset.preset) : 0;
+        savePreset(index);
+        alert(`Preset ${index + 1} saved!`);
       });
 
-      // Reset defaults
       document.getElementById('reset-defaults').addEventListener('click', () => {
         Object.assign(CONFIG, DEFAULTS);
         updateSlidersFromConfig();
       });
 
-      // Toggle controls panel
       document.getElementById('toggle-controls').addEventListener('click', () => {
         document.getElementById('controls').classList.remove('hidden');
       });
 
-      // Load saved presets from localStorage
-      loadSavedPresets();
-
-      // Keyboard shortcuts
+      // Keyboard
       document.addEventListener('keydown', (e) => {
-        // Don't trigger shortcuts when typing in inputs
         if (e.target.tagName === 'INPUT') return;
-
         switch(e.key.toLowerCase()) {
           case 'h':
-            // Toggle controls visibility
             document.getElementById('controls').classList.toggle('hidden');
             break;
           case 'm':
-            // Toggle microphone
-            if (micEnabled) {
-              disableMicrophone();
-            } else {
-              enableMicrophone();
-            }
+            micEnabled ? disableMicrophone() : enableMicrophone();
             break;
           case ' ':
-            // Toggle track playback
             e.preventDefault();
             toggleTrack();
             break;
           case 'r':
-            // Reset to defaults
             Object.assign(CONFIG, DEFAULTS);
             updateSlidersFromConfig();
             break;
         }
       });
 
-      // Add keyboard shortcut hints
-      console.log('Keyboard shortcuts: H=toggle panel, M=toggle mic, Space=play/pause, R=reset');
+      loadSavedPresets();
     }
 
     function updateSlidersFromConfig() {
       const sliders = [
-        'particleCount', 'particleSize', 'scatterIntensity', 'breathingIntensity',
-        'rotationSpeed', 'ringDisplacement', 'bloomStrength', 'bloomThreshold',
-        'bloomRadius', 'colorSaturation', 'hueShift'
+        'particleCount', 'particleSize', 'breathingIntensity', 'depthIntensity',
+        'waveAmplitude', 'audioSensitivity', 'bloomStrength'
       ];
 
       sliders.forEach(id => {
         const slider = document.getElementById(id);
+        if (!slider) return;
+
         const valueDisplay = document.getElementById(id + '-val');
         slider.value = CONFIG[id];
 
-        if (id === 'particleCount' || id === 'hueShift') {
+        if (id === 'particleCount' || id === 'waveAmplitude') {
           valueDisplay.textContent = Math.round(CONFIG[id]);
         } else {
           valueDisplay.textContent = CONFIG[id].toFixed(2);
@@ -1897,8 +1526,6 @@
       if (presets[index]) {
         Object.assign(CONFIG, presets[index]);
         updateSlidersFromConfig();
-
-        // Rebuild particles if count changed
         if (logoParticleData.length !== CONFIG.particleCount) {
           rebuildParticles();
         }
@@ -1906,7 +1533,6 @@
     }
 
     function loadSavedPresets() {
-      // Load last used preset if available
       const lastPreset = localStorage.getItem('agencerAvatarLastPreset');
       if (lastPreset !== null) {
         loadPreset(parseInt(lastPreset));
@@ -1915,23 +1541,18 @@
     }
 
     async function rebuildParticles() {
-      // Remove old particles
       scene.remove(particles);
       particleGeometry.dispose();
       particleMaterial.dispose();
-
-      // Generate new particle data
       logoParticleData = generateProceduralLogoData();
-
-      // Recreate particles
       createParticles();
     }
 
     async function loadLogoFromImage(imageSrc) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
 
+      return new Promise((resolve) => {
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
@@ -1939,7 +1560,6 @@
           canvas.width = size;
           canvas.height = size;
 
-          // Draw centered and scaled
           const scale = size / Math.max(img.width, img.height);
           const w = img.width * scale;
           const h = img.height * scale;
@@ -1948,51 +1568,47 @@
 
           ctx.drawImage(img, x, y, w, h);
           const imageData = ctx.getImageData(0, 0, size, size);
-          const data = imageData.data;
+          const pixels = imageData.data;
 
           const candidates = [];
+          const centerX = size / 2;
+          const centerY = size / 2;
 
           for (let py = 0; py < size; py++) {
             for (let px = 0; px < size; px++) {
               const i = (py * size + px) * 4;
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              const a = data[i + 3];
+              const r = pixels[i];
+              const g = pixels[i + 1];
+              const b = pixels[i + 2];
+              const a = pixels[i + 3];
 
-              // Only include non-transparent pixels
-              if (a > 50) {
-                // Normalize position to -1 to 1 range
-                const nx = (px / size - 0.5) * 2;
-                const ny = (0.5 - py / size) * 2;
+              if (a < 50) continue;
 
-                candidates.push({
-                  x: nx,
-                  y: ny,
-                  r: r / 255,
-                  g: g / 255,
-                  b: b / 255
-                });
-              }
+              candidates.push({
+                x: (px - centerX) / centerX,
+                y: (centerY - py) / centerY,
+                r: r / 255,
+                g: g / 255,
+                b: b / 255,
+                phase: Math.random() * Math.PI * 2
+              });
             }
           }
 
-          // Shuffle and sample down to target count
           const shuffled = candidates.sort(() => Math.random() - 0.5);
           logoParticleData = shuffled.slice(0, CONFIG.particleCount);
 
-          // Rebuild the particle system
           scene.remove(particles);
           particleGeometry.dispose();
           particleMaterial.dispose();
           createParticles();
 
-          console.log(`Loaded logo with ${logoParticleData.length} particles from ${candidates.length} candidates`);
+          console.log(`Loaded logo with ${logoParticleData.length} particles`);
           resolve();
         };
 
         img.onerror = () => {
-          console.error('Failed to load logo image');
+          console.error('Failed to load logo');
           resolve();
         };
 
@@ -2003,10 +1619,8 @@
     function onWindowResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-
       renderer.setSize(window.innerWidth, window.innerHeight);
       composer.setSize(window.innerWidth, window.innerHeight);
-
       particleMaterial.uniforms.uPixelRatio.value = renderer.getPixelRatio();
     }
 
@@ -2016,13 +1630,12 @@
 
     init();
 
-    // Expose for debugging
     window.agencerAvatar = {
       CONFIG,
       scene,
       camera,
       particles,
-      ring,
+      ringLine,
       rebuildParticles
     };
   </script>
