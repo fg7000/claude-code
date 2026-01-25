@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<!--
+  AGENCER AVATAR - Audio Reactive Three.js Presence
+  =================================================
+
+  This component creates a luminous, soulful AI avatar visualization
+  using particle effects and audio reactivity.
+
+  USAGE:
+  1. Open this file in a modern browser
+  2. Click "Upload Logo Image" to load your logo (PNG with transparency works best)
+  3. Click "Enable Microphone" to let your voice control the ring
+  4. Click "Upload Audio Track" to load an audio file, or use the synthesized demo
+  5. Click "Play Agencer Voice" to animate the particles with audio
+
+  AUDIO MAPPING:
+  - Microphone input → Ring displacement (user speaking = ring reacts)
+  - Audio track → Particle animation (Agencer speaking = particles react)
+
+  CUSTOMIZATION:
+  - All visual parameters can be adjusted via the controls panel
+  - Presets can be saved to localStorage
+  - To embed a specific logo, set LOGO_BASE64 constant to your base64-encoded image
+  - To embed a specific audio track, set the <audio> element's src attribute
+
+  INTEGRATION:
+  To embed this in your application:
+  1. Include the Three.js dependencies
+  2. Copy the JavaScript module code
+  3. Call init() when ready
+  4. Access controls via window.agencerAvatar.CONFIG
+
+  The feeling: warm, intimate, aware. Like encountering a presence.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agencer Avatar - Audio Reactive Presence</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      background: #0a0a0f;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #fff;
+    }
+
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    /* Vignette overlay */
+    #vignette {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(5, 5, 10, 0.7) 100%);
+      z-index: 1;
+    }
+
+    /* Film grain overlay */
+    #grain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.03;
+      z-index: 2;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+
+    /* Controls Panel */
+    #controls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 320px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      background: rgba(15, 15, 25, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 20px;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+      font-size: 13px;
+    }
+
+    #controls::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #controls::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 3px;
+    }
+
+    #controls::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    #controls h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #controls h2::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: linear-gradient(135deg, #00ff88, #00aaff);
+      border-radius: 50%;
+      box-shadow: 0 0 10px #00ff88;
+    }
+
+    .control-section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .control-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 12px;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .control-row label {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 12px;
+    }
+
+    .control-row input[type="range"] {
+      width: 140px;
+      height: 4px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    .control-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      background: linear-gradient(135deg, #00ff88, #00aaff);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+    }
+
+    .control-row .value {
+      width: 45px;
+      text-align: right;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00ff88 0%, #00aaff 100%);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
+    }
+
+    .btn-primary.active {
+      background: linear-gradient(135deg, #ff4466 0%, #ff6644 100%);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 11px;
+      width: auto;
+      margin-bottom: 0;
+    }
+
+    .preset-buttons {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .preset-btn {
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #fff;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(0, 255, 136, 0.5);
+    }
+
+    .preset-btn.active {
+      background: rgba(0, 255, 136, 0.2);
+      border-color: #00ff88;
+    }
+
+    /* Audio meters */
+    .meter-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .meter {
+      flex: 1;
+    }
+
+    .meter-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 4px;
+    }
+
+    .meter-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.05s ease;
+    }
+
+    .meter-fill.mic {
+      background: linear-gradient(90deg, #00ff88, #00aaff);
+    }
+
+    .meter-fill.track {
+      background: linear-gradient(90deg, #ff6644, #ffaa00);
+    }
+
+    /* Status indicator */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #444;
+    }
+
+    .status-dot.active {
+      background: #00ff88;
+      box-shadow: 0 0 10px #00ff88;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-text {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* FPS counter */
+    #fps {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      z-index: 100;
+    }
+
+    /* Toggle for controls panel */
+    #toggle-controls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: rgba(15, 15, 25, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      z-index: 99;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    #controls.hidden {
+      display: none;
+    }
+
+    #controls.hidden ~ #toggle-controls {
+      display: flex;
+    }
+
+    /* Logo image loader (hidden) */
+    #logo-loader {
+      display: none;
+    }
+
+    /* Loading state */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.5s ease;
+    }
+
+    #loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loading-text {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 20px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #00ff88;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Initializing presence...</div>
+  </div>
+
+  <div id="canvas-container"></div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+
+  <div id="fps">-- FPS</div>
+
+  <div id="controls">
+    <h2>Agencer Avatar</h2>
+
+    <!-- Logo Upload -->
+    <div class="control-section">
+      <div class="section-title">Logo Image</div>
+      <input type="file" id="logo-upload" accept="image/*" style="display: none;">
+      <button class="btn btn-secondary" id="upload-logo-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        Upload Logo Image
+      </button>
+      <p style="font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 8px;">
+        Upload your logo to extract particles from it
+      </p>
+    </div>
+
+    <!-- Audio Controls -->
+    <div class="control-section">
+      <div class="section-title">Audio Sources</div>
+
+      <input type="file" id="audio-upload" accept="audio/*" style="display: none;">
+      <button class="btn btn-secondary" id="upload-audio-btn" style="margin-bottom: 12px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+        Upload Audio Track
+      </button>
+
+      <div class="status-row">
+        <div class="status-dot" id="mic-status"></div>
+        <span class="status-text" id="mic-status-text">Microphone: Off</span>
+      </div>
+
+      <button class="btn btn-primary" id="mic-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+        </svg>
+        Enable Microphone
+      </button>
+
+      <button class="btn btn-secondary" id="track-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Play Agencer Voice
+      </button>
+
+      <div class="meter-container">
+        <div class="meter">
+          <div class="meter-label">User (Mic)</div>
+          <div class="meter-bar">
+            <div class="meter-fill mic" id="mic-meter" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="meter">
+          <div class="meter-label">Agencer (Track)</div>
+          <div class="meter-bar">
+            <div class="meter-fill track" id="track-meter" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Particle Controls -->
+    <div class="control-section">
+      <div class="section-title">Particles</div>
+
+      <div class="control-row">
+        <label>Particle Count</label>
+        <input type="range" id="particleCount" min="5000" max="15000" value="10000" step="500">
+        <span class="value" id="particleCount-val">10000</span>
+      </div>
+
+      <div class="control-row">
+        <label>Particle Size</label>
+        <input type="range" id="particleSize" min="1" max="10" value="3" step="0.5">
+        <span class="value" id="particleSize-val">3.0</span>
+      </div>
+
+      <div class="control-row">
+        <label>Scatter Intensity</label>
+        <input type="range" id="scatterIntensity" min="0" max="2" value="1" step="0.05">
+        <span class="value" id="scatterIntensity-val">1.00</span>
+      </div>
+
+      <div class="control-row">
+        <label>Breathing Intensity</label>
+        <input type="range" id="breathingIntensity" min="0" max="1" value="0.5" step="0.05">
+        <span class="value" id="breathingIntensity-val">0.50</span>
+      </div>
+
+      <div class="control-row">
+        <label>Rotation Speed</label>
+        <input type="range" id="rotationSpeed" min="0" max="0.5" value="0.05" step="0.01">
+        <span class="value" id="rotationSpeed-val">0.05</span>
+      </div>
+    </div>
+
+    <!-- Ring Controls -->
+    <div class="control-section">
+      <div class="section-title">Ring</div>
+
+      <div class="control-row">
+        <label>Ring Displacement</label>
+        <input type="range" id="ringDisplacement" min="0" max="1" value="0.5" step="0.05">
+        <span class="value" id="ringDisplacement-val">0.50</span>
+      </div>
+    </div>
+
+    <!-- Bloom Controls -->
+    <div class="control-section">
+      <div class="section-title">Bloom / Glow</div>
+
+      <div class="control-row">
+        <label>Bloom Strength</label>
+        <input type="range" id="bloomStrength" min="0.5" max="3" value="1.5" step="0.1">
+        <span class="value" id="bloomStrength-val">1.50</span>
+      </div>
+
+      <div class="control-row">
+        <label>Bloom Threshold</label>
+        <input type="range" id="bloomThreshold" min="0" max="0.5" value="0.1" step="0.01">
+        <span class="value" id="bloomThreshold-val">0.10</span>
+      </div>
+
+      <div class="control-row">
+        <label>Bloom Radius</label>
+        <input type="range" id="bloomRadius" min="0.1" max="2" value="0.8" step="0.1">
+        <span class="value" id="bloomRadius-val">0.80</span>
+      </div>
+    </div>
+
+    <!-- Color Controls -->
+    <div class="control-section">
+      <div class="section-title">Color</div>
+
+      <div class="control-row">
+        <label>Color Saturation</label>
+        <input type="range" id="colorSaturation" min="0" max="1.5" value="1" step="0.05">
+        <span class="value" id="colorSaturation-val">1.00</span>
+      </div>
+
+      <div class="control-row">
+        <label>Hue Shift</label>
+        <input type="range" id="hueShift" min="0" max="360" value="0" step="5">
+        <span class="value" id="hueShift-val">0</span>
+      </div>
+    </div>
+
+    <!-- Presets -->
+    <div class="control-section">
+      <div class="section-title">Presets</div>
+
+      <div class="preset-buttons">
+        <button class="preset-btn" data-preset="0">1</button>
+        <button class="preset-btn" data-preset="1">2</button>
+        <button class="preset-btn" data-preset="2">3</button>
+        <button class="preset-btn" data-preset="3">4</button>
+        <button class="preset-btn" data-preset="4">5</button>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary btn-small" id="save-preset">Save Current</button>
+        <button class="btn btn-secondary btn-small" id="reset-defaults">Reset Defaults</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="toggle-controls">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M12 1v6m0 6v10M4.22 4.22l4.24 4.24m7.08 7.08l4.24 4.24M1 12h6m6 0h10M4.22 19.78l4.24-4.24m7.08-7.08l4.24-4.24"/>
+    </svg>
+  </button>
+
+  <!-- Hidden image loader -->
+  <img id="logo-loader" crossorigin="anonymous">
+
+  <!-- Audio element for Agencer voice track -->
+  <!-- Replace this src with your actual audio file path or URL -->
+  <audio id="agencer-audio" loop></audio>
+
+  <!-- Three.js and dependencies via CDN -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+    // ============================================
+    // CONFIGURATION & STATE
+    // ============================================
+
+    const CONFIG = {
+      particleCount: 10000,
+      particleSize: 3,
+      scatterIntensity: 1,
+      breathingIntensity: 0.5,
+      rotationSpeed: 0.05,
+      ringDisplacement: 0.5,
+      bloomStrength: 1.5,
+      bloomThreshold: 0.1,
+      bloomRadius: 0.8,
+      colorSaturation: 1,
+      hueShift: 0
+    };
+
+    const DEFAULTS = { ...CONFIG };
+
+    let scene, camera, renderer, composer, bloomPass;
+    let particles, particleGeometry, particleMaterial;
+    let ring, ringGeometry, ringMaterial;
+    let audioContext, micAnalyser, trackAnalyser;
+    let micStream, micSource;
+    let micEnabled = false, trackPlaying = false;
+    let micData, trackData;
+    let smoothedMicLevel = 0, smoothedTrackLevel = 0;
+    let smoothedMicBands = { low: 0, mid: 0, high: 0 };
+    let smoothedTrackBands = { low: 0, mid: 0, high: 0 };
+    let clock, time = 0;
+    let particlePositions, homePositions, particleColors, particleSizes;
+    let ringPositions, ringHomePositions;
+    let logoParticleData = [];
+    let frameCount = 0, lastFpsTime = 0, fps = 0;
+
+    // ============================================
+    // LOGO PARSING
+    // ============================================
+
+    // ============================================
+    // LOGO CONFIGURATION
+    // ============================================
+    // Option 1: Set LOGO_URL to a path or URL to load your logo
+    // Option 2: Set LOGO_BASE64 to a base64-encoded data URL
+    // Option 3: Leave both as null to use procedural generation
+    // Option 4: Use the "Upload Logo Image" button at runtime
+
+    const LOGO_URL = 'agencer-logo.png'; // Try to load from this path first
+    const LOGO_BASE64 = null; // Or set to 'data:image/png;base64,...'
+
+    async function parseLogoImage(imageSource) {
+      return new Promise((resolve) => {
+        // Try loading from various sources
+        const sourceToTry = imageSource || LOGO_BASE64 || LOGO_URL;
+
+        if (!sourceToTry) {
+          // Generate procedural spiral particle data matching the Agencer logo style
+          console.log('No logo source found, using procedural generation');
+          resolve(generateProceduralLogoData());
+          return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        img.onload = () => {
+          console.log('Logo image loaded successfully');
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const size = Math.min(img.width, img.height, 512);
+          canvas.width = size;
+          canvas.height = size;
+
+          // Draw centered and scaled
+          const scale = size / Math.max(img.width, img.height);
+          const w = img.width * scale;
+          const h = img.height * scale;
+          const x = (size - w) / 2;
+          const y = (size - h) / 2;
+
+          ctx.drawImage(img, x, y, w, h);
+          const imageData = ctx.getImageData(0, 0, size, size);
+          const data = imageData.data;
+
+          const candidates = [];
+
+          for (let py = 0; py < size; py++) {
+            for (let px = 0; px < size; px++) {
+              const i = (py * size + px) * 4;
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              const a = data[i + 3];
+
+              if (a > 50) {
+                // Normalize position to -1 to 1 range
+                const nx = (px / size - 0.5) * 2;
+                const ny = (0.5 - py / size) * 2;
+
+                candidates.push({
+                  x: nx,
+                  y: ny,
+                  r: r / 255,
+                  g: g / 255,
+                  b: b / 255
+                });
+              }
+            }
+          }
+
+          // Randomly sample down to target count
+          const shuffled = candidates.sort(() => Math.random() - 0.5);
+          console.log(`Parsed ${candidates.length} pixels, sampled ${CONFIG.particleCount} particles`);
+          resolve(shuffled.slice(0, CONFIG.particleCount));
+        };
+
+        img.onerror = () => {
+          console.log('Could not load logo from', sourceToTry, '- using procedural generation');
+          resolve(generateProceduralLogoData());
+        };
+
+        img.src = sourceToTry;
+      });
+    }
+
+    function generateProceduralLogoData() {
+      // Generate a colorful spiral pattern matching the Agencer logo aesthetic
+      const particles = [];
+      const count = CONFIG.particleCount;
+
+      // Color palette based on the logo (rainbow spiral)
+      const colorStops = [
+        { angle: 0, color: [0.9, 0.2, 0.6] },      // Magenta/Pink
+        { angle: 60, color: [1.0, 0.3, 0.3] },     // Red
+        { angle: 120, color: [1.0, 0.6, 0.1] },    // Orange
+        { angle: 180, color: [0.9, 0.9, 0.2] },    // Yellow
+        { angle: 240, color: [0.3, 0.9, 0.4] },    // Green
+        { angle: 300, color: [0.2, 0.8, 0.9] },    // Cyan
+        { angle: 360, color: [0.3, 0.4, 0.9] }     // Blue
+      ];
+
+      function getColorAtAngle(angle) {
+        angle = ((angle % 360) + 360) % 360;
+
+        for (let i = 0; i < colorStops.length - 1; i++) {
+          if (angle >= colorStops[i].angle && angle < colorStops[i + 1].angle) {
+            const t = (angle - colorStops[i].angle) / (colorStops[i + 1].angle - colorStops[i].angle);
+            return [
+              colorStops[i].color[0] + (colorStops[i + 1].color[0] - colorStops[i].color[0]) * t,
+              colorStops[i].color[1] + (colorStops[i + 1].color[1] - colorStops[i].color[1]) * t,
+              colorStops[i].color[2] + (colorStops[i + 1].color[2] - colorStops[i].color[2]) * t
+            ];
+          }
+        }
+        return colorStops[0].color;
+      }
+
+      // Create spiral arms with swirl effect
+      const arms = 8;
+      const spiralTightness = 0.15;
+      const maxRadius = 0.85;
+
+      for (let i = 0; i < count; i++) {
+        // Distribute particles along spiral arms
+        const armIndex = i % arms;
+        const armOffset = (armIndex / arms) * Math.PI * 2;
+        const progress = Math.pow(Math.random(), 0.7); // More particles toward center
+
+        const baseAngle = progress * Math.PI * 4 + armOffset;
+        const radius = progress * maxRadius;
+
+        // Add swirl effect
+        const swirlAngle = baseAngle + progress * Math.PI * 2;
+
+        // Add some randomness
+        const angleNoise = (Math.random() - 0.5) * 0.3;
+        const radiusNoise = (Math.random() - 0.5) * 0.08;
+
+        const finalAngle = swirlAngle + angleNoise;
+        const finalRadius = radius + radiusNoise;
+
+        const x = Math.cos(finalAngle) * finalRadius;
+        const y = Math.sin(finalAngle) * finalRadius;
+
+        // Color based on angle
+        const colorAngle = ((finalAngle * 180 / Math.PI) + 180) % 360;
+        const [r, g, b] = getColorAtAngle(colorAngle);
+
+        // Add brightness variation
+        const brightness = 0.8 + Math.random() * 0.4;
+
+        particles.push({
+          x: x,
+          y: y,
+          r: Math.min(1, r * brightness),
+          g: Math.min(1, g * brightness),
+          b: Math.min(1, b * brightness)
+        });
+      }
+
+      return particles;
+    }
+
+    // ============================================
+    // THREE.JS SETUP
+    // ============================================
+
+    async function init() {
+      // Parse logo
+      logoParticleData = await parseLogoImage(LOGO_BASE64);
+
+      // Scene
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0a0f);
+
+      // Camera
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.z = 3;
+
+      // Renderer
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+      // Create particles
+      createParticles();
+
+      // Create ring
+      createRing();
+
+      // Post-processing
+      setupPostProcessing();
+
+      // Audio
+      setupAudio();
+
+      // Controls
+      setupControls();
+
+      // Clock
+      clock = new THREE.Clock();
+
+      // Window resize
+      window.addEventListener('resize', onWindowResize);
+
+      // Hide loading screen
+      setTimeout(() => {
+        document.getElementById('loading').classList.add('hidden');
+      }, 500);
+
+      // Start animation loop
+      animate();
+    }
+
+    function createParticles() {
+      const count = logoParticleData.length;
+
+      particleGeometry = new THREE.BufferGeometry();
+
+      particlePositions = new Float32Array(count * 3);
+      homePositions = new Float32Array(count * 3);
+      particleColors = new Float32Array(count * 3);
+      particleSizes = new Float32Array(count);
+
+      for (let i = 0; i < count; i++) {
+        const particle = logoParticleData[i];
+        const i3 = i * 3;
+
+        // Position (start at home)
+        particlePositions[i3] = particle.x;
+        particlePositions[i3 + 1] = particle.y;
+        particlePositions[i3 + 2] = (Math.random() - 0.5) * 0.1; // Slight z variation
+
+        // Home position
+        homePositions[i3] = particle.x;
+        homePositions[i3 + 1] = particle.y;
+        homePositions[i3 + 2] = particlePositions[i3 + 2];
+
+        // Color
+        particleColors[i3] = particle.r;
+        particleColors[i3 + 1] = particle.g;
+        particleColors[i3 + 2] = particle.b;
+
+        // Size
+        particleSizes[i] = 0.5 + Math.random() * 0.5;
+      }
+
+      particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+      particleGeometry.setAttribute('homePosition', new THREE.BufferAttribute(homePositions, 3));
+      particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+      particleGeometry.setAttribute('size', new THREE.BufferAttribute(particleSizes, 1));
+
+      // Shader material
+      particleMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uSize: { value: CONFIG.particleSize },
+          uPixelRatio: { value: renderer.getPixelRatio() },
+          uAudioLevel: { value: 0 },
+          uScatterIntensity: { value: CONFIG.scatterIntensity },
+          uBreathingIntensity: { value: CONFIG.breathingIntensity },
+          uSaturation: { value: CONFIG.colorSaturation },
+          uHueShift: { value: CONFIG.hueShift },
+          uMidFreq: { value: 0 },
+          uHighFreq: { value: 0 }
+        },
+        vertexShader: `
+          uniform float uTime;
+          uniform float uSize;
+          uniform float uPixelRatio;
+          uniform float uAudioLevel;
+          uniform float uScatterIntensity;
+          uniform float uBreathingIntensity;
+          uniform float uMidFreq;
+          uniform float uHighFreq;
+
+          attribute vec3 homePosition;
+          attribute float size;
+          attribute vec3 color;
+
+          varying vec3 vColor;
+          varying float vAlpha;
+
+          // Simplex noise functions
+          vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+          vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+          vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+          vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+          float snoise(vec3 v) {
+            const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+            const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+
+            vec3 i  = floor(v + dot(v, C.yyy));
+            vec3 x0 = v - i + dot(i, C.xxx);
+
+            vec3 g = step(x0.yzx, x0.xyz);
+            vec3 l = 1.0 - g;
+            vec3 i1 = min(g.xyz, l.zxy);
+            vec3 i2 = max(g.xyz, l.zxy);
+
+            vec3 x1 = x0 - i1 + C.xxx;
+            vec3 x2 = x0 - i2 + C.yyy;
+            vec3 x3 = x0 - D.yyy;
+
+            i = mod289(i);
+            vec4 p = permute(permute(permute(
+                     i.z + vec4(0.0, i1.z, i2.z, 1.0))
+                   + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+                   + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+
+            float n_ = 0.142857142857;
+            vec3 ns = n_ * D.wyz - D.xzx;
+
+            vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+
+            vec4 x_ = floor(j * ns.z);
+            vec4 y_ = floor(j - 7.0 * x_);
+
+            vec4 x = x_ *ns.x + ns.yyyy;
+            vec4 y = y_ *ns.x + ns.yyyy;
+            vec4 h = 1.0 - abs(x) - abs(y);
+
+            vec4 b0 = vec4(x.xy, y.xy);
+            vec4 b1 = vec4(x.zw, y.zw);
+
+            vec4 s0 = floor(b0)*2.0 + 1.0;
+            vec4 s1 = floor(b1)*2.0 + 1.0;
+            vec4 sh = -step(h, vec4(0.0));
+
+            vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+            vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+
+            vec3 p0 = vec3(a0.xy, h.x);
+            vec3 p1 = vec3(a0.zw, h.y);
+            vec3 p2 = vec3(a1.xy, h.z);
+            vec3 p3 = vec3(a1.zw, h.w);
+
+            vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+            p0 *= norm.x;
+            p1 *= norm.y;
+            p2 *= norm.z;
+            p3 *= norm.w;
+
+            vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+            m = m * m;
+            return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+          }
+
+          void main() {
+            vec3 pos = homePosition;
+
+            // Breathing animation (3D Perlin noise displacement)
+            float breathingTime = uTime * 0.3;
+            vec3 noiseCoord = pos * 2.0 + vec3(breathingTime);
+            float noiseVal = snoise(noiseCoord);
+            float noiseVal2 = snoise(noiseCoord * 1.5 + 100.0);
+            float noiseVal3 = snoise(noiseCoord * 0.7 + 200.0);
+
+            vec3 breathOffset = vec3(
+              noiseVal * 0.05,
+              noiseVal2 * 0.05,
+              noiseVal3 * 0.03
+            ) * uBreathingIntensity;
+
+            // Audio-reactive scatter
+            float distFromCenter = length(homePosition.xy);
+            vec3 scatterDir = normalize(vec3(homePosition.xy, 0.0) + vec3(0.001));
+            float scatterAmount = uAudioLevel * uScatterIntensity * (0.3 + distFromCenter * 0.7);
+
+            // Mid frequency adds radial pulse
+            scatterAmount += uMidFreq * 0.15 * uScatterIntensity;
+
+            vec3 scatterOffset = scatterDir * scatterAmount * 0.3;
+
+            // High frequency adds shimmer to z position
+            float shimmer = uHighFreq * 0.1 * sin(uTime * 10.0 + homePosition.x * 20.0);
+
+            // Combine positions
+            pos = pos + breathOffset + scatterOffset;
+            pos.z += shimmer;
+
+            // Transform
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+
+            // Size with audio and high freq variation
+            float audioSizeBoost = 1.0 + uAudioLevel * 0.5 + uHighFreq * 0.3;
+            gl_PointSize = size * uSize * uPixelRatio * audioSizeBoost * (300.0 / -mvPosition.z);
+
+            // Pass color and alpha
+            vColor = color;
+            vAlpha = 0.8 + uAudioLevel * 0.2;
+          }
+        `,
+        fragmentShader: `
+          uniform float uSaturation;
+          uniform float uHueShift;
+          uniform float uAudioLevel;
+
+          varying vec3 vColor;
+          varying float vAlpha;
+
+          vec3 rgb2hsv(vec3 c) {
+            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+            float d = q.x - min(q.w, q.y);
+            float e = 1.0e-10;
+            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+          }
+
+          vec3 hsv2rgb(vec3 c) {
+            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+          }
+
+          void main() {
+            // Soft radial gradient circle
+            float dist = length(gl_PointCoord - vec2(0.5));
+            float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+
+            // Glow effect
+            float glow = exp(-dist * 3.0);
+
+            // Apply hue shift and saturation
+            vec3 hsv = rgb2hsv(vColor);
+            hsv.x = fract(hsv.x + uHueShift / 360.0);
+            hsv.y *= uSaturation;
+            vec3 color = hsv2rgb(hsv);
+
+            // Emissive color values exceeding 1.0 for bloom
+            float emissiveBoost = 1.2 + glow * 0.5 + uAudioLevel * 0.3;
+
+            gl_FragColor = vec4(color * emissiveBoost, alpha * vAlpha);
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+
+      particles = new THREE.Points(particleGeometry, particleMaterial);
+      scene.add(particles);
+    }
+
+    function createRing() {
+      const segments = 256;
+      const radius = 1.1;
+
+      ringGeometry = new THREE.BufferGeometry();
+      ringPositions = new Float32Array(segments * 3);
+      ringHomePositions = new Float32Array(segments * 3);
+      const ringColors = new Float32Array(segments * 3);
+
+      // Ring color gradient (yellow -> green -> cyan from the logo edge)
+      const ringColorStops = [
+        { t: 0, color: [0.9, 0.9, 0.2] },       // Yellow
+        { t: 0.33, color: [0.3, 0.9, 0.4] },    // Green
+        { t: 0.66, color: [0.2, 0.8, 0.9] },    // Cyan
+        { t: 1, color: [0.9, 0.9, 0.2] }        // Back to yellow
+      ];
+
+      function getRingColor(t) {
+        for (let i = 0; i < ringColorStops.length - 1; i++) {
+          if (t >= ringColorStops[i].t && t <= ringColorStops[i + 1].t) {
+            const localT = (t - ringColorStops[i].t) / (ringColorStops[i + 1].t - ringColorStops[i].t);
+            return [
+              ringColorStops[i].color[0] + (ringColorStops[i + 1].color[0] - ringColorStops[i].color[0]) * localT,
+              ringColorStops[i].color[1] + (ringColorStops[i + 1].color[1] - ringColorStops[i].color[1]) * localT,
+              ringColorStops[i].color[2] + (ringColorStops[i + 1].color[2] - ringColorStops[i].color[2]) * localT
+            ];
+          }
+        }
+        return ringColorStops[0].color;
+      }
+
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2;
+        const i3 = i * 3;
+
+        ringPositions[i3] = Math.cos(angle) * radius;
+        ringPositions[i3 + 1] = Math.sin(angle) * radius;
+        ringPositions[i3 + 2] = 0;
+
+        ringHomePositions[i3] = ringPositions[i3];
+        ringHomePositions[i3 + 1] = ringPositions[i3 + 1];
+        ringHomePositions[i3 + 2] = 0;
+
+        const t = i / segments;
+        const [r, g, b] = getRingColor(t);
+        ringColors[i3] = r;
+        ringColors[i3 + 1] = g;
+        ringColors[i3 + 2] = b;
+      }
+
+      ringGeometry.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
+      ringGeometry.setAttribute('color', new THREE.BufferAttribute(ringColors, 3));
+
+      ringMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uAudioLevel: { value: 0 },
+          uDisplacement: { value: CONFIG.ringDisplacement },
+          uSaturation: { value: CONFIG.colorSaturation },
+          uHueShift: { value: CONFIG.hueShift },
+          uLowFreq: { value: 0 }
+        },
+        vertexShader: `
+          attribute vec3 color;
+          varying vec3 vColor;
+
+          void main() {
+            vColor = color;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = 4.0;
+          }
+        `,
+        fragmentShader: `
+          uniform float uSaturation;
+          uniform float uHueShift;
+          uniform float uAudioLevel;
+
+          varying vec3 vColor;
+
+          vec3 rgb2hsv(vec3 c) {
+            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+            float d = q.x - min(q.w, q.y);
+            float e = 1.0e-10;
+            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+          }
+
+          vec3 hsv2rgb(vec3 c) {
+            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+          }
+
+          void main() {
+            float dist = length(gl_PointCoord - vec2(0.5));
+            float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+            float glow = exp(-dist * 2.0);
+
+            vec3 hsv = rgb2hsv(vColor);
+            hsv.x = fract(hsv.x + uHueShift / 360.0);
+            hsv.y *= uSaturation;
+            vec3 color = hsv2rgb(hsv);
+
+            float emissive = 1.3 + glow * 0.5 + uAudioLevel * 0.4;
+
+            gl_FragColor = vec4(color * emissive, alpha * 0.9);
+          }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+
+      ring = new THREE.Points(ringGeometry, ringMaterial);
+      scene.add(ring);
+    }
+
+    // Chromatic Aberration Shader
+    const ChromaticAberrationShader = {
+      uniforms: {
+        tDiffuse: { value: null },
+        uIntensity: { value: 0.002 },
+        uTime: { value: 0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float uIntensity;
+        uniform float uTime;
+        varying vec2 vUv;
+
+        void main() {
+          vec2 center = vec2(0.5);
+          vec2 dir = vUv - center;
+          float dist = length(dir);
+
+          // Only apply at edges
+          float edgeFactor = smoothstep(0.2, 0.7, dist);
+          float offset = uIntensity * edgeFactor;
+
+          // Subtle time-based variation
+          offset *= 1.0 + sin(uTime * 0.5) * 0.1;
+
+          vec2 rOffset = dir * offset;
+          vec2 bOffset = -dir * offset;
+
+          float r = texture2D(tDiffuse, vUv + rOffset).r;
+          float g = texture2D(tDiffuse, vUv).g;
+          float b = texture2D(tDiffuse, vUv + bOffset).b;
+          float a = texture2D(tDiffuse, vUv).a;
+
+          gl_FragColor = vec4(r, g, b, a);
+        }
+      `
+    };
+
+    let chromaticPass;
+
+    function setupPostProcessing() {
+      composer = new EffectComposer(renderer);
+
+      const renderPass = new RenderPass(scene, camera);
+      composer.addPass(renderPass);
+
+      bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(window.innerWidth, window.innerHeight),
+        CONFIG.bloomStrength,
+        CONFIG.bloomRadius,
+        CONFIG.bloomThreshold
+      );
+      composer.addPass(bloomPass);
+
+      // Chromatic aberration (subtle, at edges)
+      chromaticPass = new ShaderPass(ChromaticAberrationShader);
+      composer.addPass(chromaticPass);
+    }
+
+    // ============================================
+    // AUDIO SYSTEM
+    // ============================================
+
+    function setupAudio() {
+      micData = new Uint8Array(128);
+      trackData = new Uint8Array(128);
+    }
+
+    async function enableMicrophone() {
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micSource = audioContext.createMediaStreamSource(micStream);
+        micAnalyser = audioContext.createAnalyser();
+        micAnalyser.fftSize = 256;
+        micSource.connect(micAnalyser);
+
+        micData = new Uint8Array(micAnalyser.frequencyBinCount);
+        micEnabled = true;
+
+        document.getElementById('mic-status').classList.add('active');
+        document.getElementById('mic-status-text').textContent = 'Microphone: Active';
+        document.getElementById('mic-btn').classList.add('active');
+        document.getElementById('mic-btn').innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+          </svg>
+          Disable Microphone
+        `;
+
+      } catch (err) {
+        console.error('Microphone access denied:', err);
+        alert('Microphone access was denied. Please allow microphone access to use this feature.');
+      }
+    }
+
+    function disableMicrophone() {
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+      }
+      if (micSource) {
+        micSource.disconnect();
+      }
+
+      micEnabled = false;
+      document.getElementById('mic-status').classList.remove('active');
+      document.getElementById('mic-status-text').textContent = 'Microphone: Off';
+      document.getElementById('mic-btn').classList.remove('active');
+      document.getElementById('mic-btn').innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+        </svg>
+        Enable Microphone
+      `;
+    }
+
+    // Synthesized demo audio generator (used when no audio file is provided)
+    let synthOscillators = [];
+    let synthGain = null;
+    let usingSynthAudio = false;
+
+    function createSynthVoice() {
+      if (!audioContext) return;
+
+      // Create a complex tone that simulates speech-like patterns
+      const masterGain = audioContext.createGain();
+      masterGain.gain.value = 0;
+      masterGain.connect(trackAnalyser);
+
+      synthGain = masterGain;
+
+      // Multiple oscillators for rich harmonic content
+      const frequencies = [120, 240, 360, 480, 600]; // Fundamental + harmonics
+
+      frequencies.forEach((freq, i) => {
+        const osc = audioContext.createOscillator();
+        const oscGain = audioContext.createGain();
+
+        osc.type = i === 0 ? 'sawtooth' : 'sine';
+        osc.frequency.value = freq;
+        oscGain.gain.value = 1 / (i + 1); // Decreasing amplitude for harmonics
+
+        osc.connect(oscGain);
+        oscGain.connect(masterGain);
+        osc.start();
+
+        synthOscillators.push({ osc, gain: oscGain });
+      });
+
+      usingSynthAudio = true;
+    }
+
+    function animateSynthVoice() {
+      if (!usingSynthAudio || !trackPlaying || !synthGain) return;
+
+      // Simulate speech patterns with varying amplitude and frequency
+      const t = audioContext.currentTime;
+
+      // Speech-like amplitude envelope
+      const speechPattern =
+        Math.sin(t * 3) * 0.3 +
+        Math.sin(t * 7) * 0.2 +
+        Math.sin(t * 13) * 0.15 +
+        Math.random() * 0.1;
+
+      const volume = Math.max(0, Math.min(1, 0.3 + speechPattern * 0.4));
+      synthGain.gain.setTargetAtTime(volume * 0.15, t, 0.05);
+
+      // Vary frequencies slightly for more natural sound
+      synthOscillators.forEach((item, i) => {
+        const baseFreq = [120, 240, 360, 480, 600][i];
+        const variation = Math.sin(t * (2 + i)) * 10;
+        item.osc.frequency.setTargetAtTime(baseFreq + variation, t, 0.1);
+      });
+
+      if (trackPlaying) {
+        requestAnimationFrame(animateSynthVoice);
+      }
+    }
+
+    function stopSynthVoice() {
+      if (synthGain) {
+        synthGain.gain.setTargetAtTime(0, audioContext.currentTime, 0.1);
+      }
+    }
+
+    async function toggleTrack() {
+      const audio = document.getElementById('agencer-audio');
+
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+
+      // Setup analyser if not done
+      if (!trackAnalyser) {
+        trackAnalyser = audioContext.createAnalyser();
+        trackAnalyser.fftSize = 256;
+        trackAnalyser.connect(audioContext.destination);
+        trackData = new Uint8Array(trackAnalyser.frequencyBinCount);
+      }
+
+      // Check if we have a real audio source
+      const hasAudioSource = audio.src && audio.src !== window.location.href;
+
+      if (!hasAudioSource && !usingSynthAudio) {
+        // Use synthesized audio demo
+        createSynthVoice();
+      }
+
+      if (hasAudioSource && !audio._connected) {
+        // Connect real audio element
+        const trackSource = audioContext.createMediaElementSource(audio);
+        trackSource.connect(trackAnalyser);
+        audio._connected = true;
+      }
+
+      if (trackPlaying) {
+        if (hasAudioSource) {
+          audio.pause();
+        } else {
+          stopSynthVoice();
+        }
+        trackPlaying = false;
+        document.getElementById('track-btn').innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Play Agencer Voice
+        `;
+      } else {
+        trackPlaying = true;
+        if (hasAudioSource) {
+          audio.play();
+        } else {
+          animateSynthVoice();
+        }
+        document.getElementById('track-btn').innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="6" y="4" width="4" height="16"/>
+            <rect x="14" y="4" width="4" height="16"/>
+          </svg>
+          Pause Agencer Voice
+        `;
+      }
+    }
+
+    function getAudioData() {
+      // Get microphone data
+      if (micEnabled && micAnalyser) {
+        micAnalyser.getByteFrequencyData(micData);
+
+        // Calculate bands
+        let low = 0, mid = 0, high = 0;
+        for (let i = 0; i < 10; i++) low += micData[i];
+        for (let i = 10; i < 40; i++) mid += micData[i];
+        for (let i = 40; i < micData.length; i++) high += micData[i];
+
+        low = (low / 10) / 255;
+        mid = (mid / 30) / 255;
+        high = (high / (micData.length - 40)) / 255;
+
+        // Smooth
+        smoothedMicBands.low = lerp(smoothedMicBands.low, low, 0.15);
+        smoothedMicBands.mid = lerp(smoothedMicBands.mid, mid, 0.15);
+        smoothedMicBands.high = lerp(smoothedMicBands.high, high, 0.15);
+        smoothedMicLevel = lerp(smoothedMicLevel, (low + mid + high) / 3, 0.15);
+      } else {
+        smoothedMicLevel = lerp(smoothedMicLevel, 0, 0.05);
+        smoothedMicBands.low = lerp(smoothedMicBands.low, 0, 0.05);
+        smoothedMicBands.mid = lerp(smoothedMicBands.mid, 0, 0.05);
+        smoothedMicBands.high = lerp(smoothedMicBands.high, 0, 0.05);
+      }
+
+      // Get track data
+      if (trackPlaying && trackAnalyser) {
+        trackAnalyser.getByteFrequencyData(trackData);
+
+        let low = 0, mid = 0, high = 0;
+        for (let i = 0; i < 10; i++) low += trackData[i];
+        for (let i = 10; i < 40; i++) mid += trackData[i];
+        for (let i = 40; i < trackData.length; i++) high += trackData[i];
+
+        low = (low / 10) / 255;
+        mid = (mid / 30) / 255;
+        high = (high / (trackData.length - 40)) / 255;
+
+        smoothedTrackBands.low = lerp(smoothedTrackBands.low, low, 0.15);
+        smoothedTrackBands.mid = lerp(smoothedTrackBands.mid, mid, 0.15);
+        smoothedTrackBands.high = lerp(smoothedTrackBands.high, high, 0.15);
+        smoothedTrackLevel = lerp(smoothedTrackLevel, (low + mid + high) / 3, 0.15);
+      } else {
+        smoothedTrackLevel = lerp(smoothedTrackLevel, 0, 0.05);
+        smoothedTrackBands.low = lerp(smoothedTrackBands.low, 0, 0.05);
+        smoothedTrackBands.mid = lerp(smoothedTrackBands.mid, 0, 0.05);
+        smoothedTrackBands.high = lerp(smoothedTrackBands.high, 0, 0.05);
+      }
+
+      // Update meters
+      document.getElementById('mic-meter').style.width = (smoothedMicLevel * 100) + '%';
+      document.getElementById('track-meter').style.width = (smoothedTrackLevel * 100) + '%';
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    // ============================================
+    // ANIMATION
+    // ============================================
+
+    function updateRing() {
+      const positions = ringGeometry.attributes.position.array;
+      const segments = positions.length / 3;
+      const radius = 1.1;
+
+      for (let i = 0; i < segments; i++) {
+        const angle = (i / segments) * Math.PI * 2;
+        const i3 = i * 3;
+
+        // Base position
+        let r = radius;
+
+        // Idle undulation
+        const idleWave = Math.sin(angle * 3 + time * 0.5) * 0.02 +
+                         Math.sin(angle * 5 - time * 0.3) * 0.01;
+        r += idleWave * CONFIG.breathingIntensity;
+
+        // Audio reactive displacement (mic/user drives ring)
+        if (smoothedMicLevel > 0.01) {
+          // Multiple sine waves for organic feel
+          const audioWave =
+            Math.sin(angle * 2 + time * 2) * smoothedMicBands.low * 0.15 +
+            Math.sin(angle * 4 - time * 3) * smoothedMicBands.mid * 0.1 +
+            Math.sin(angle * 8 + time * 5) * smoothedMicBands.high * 0.05;
+
+          r += audioWave * CONFIG.ringDisplacement;
+        }
+
+        // Quick attack, slower decay baked into smoothing
+        positions[i3] = Math.cos(angle) * r;
+        positions[i3 + 1] = Math.sin(angle) * r;
+      }
+
+      ringGeometry.attributes.position.needsUpdate = true;
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      time += delta;
+
+      // FPS counter
+      frameCount++;
+      if (time - lastFpsTime >= 1) {
+        fps = Math.round(frameCount / (time - lastFpsTime));
+        document.getElementById('fps').textContent = fps + ' FPS';
+        frameCount = 0;
+        lastFpsTime = time;
+      }
+
+      // Get audio data
+      getAudioData();
+
+      // Update particle uniforms
+      particleMaterial.uniforms.uTime.value = time;
+      particleMaterial.uniforms.uAudioLevel.value = smoothedTrackLevel; // Track drives particles
+      particleMaterial.uniforms.uMidFreq.value = smoothedTrackBands.mid;
+      particleMaterial.uniforms.uHighFreq.value = smoothedTrackBands.high;
+      particleMaterial.uniforms.uSize.value = CONFIG.particleSize;
+      particleMaterial.uniforms.uScatterIntensity.value = CONFIG.scatterIntensity;
+      particleMaterial.uniforms.uBreathingIntensity.value = CONFIG.breathingIntensity;
+      particleMaterial.uniforms.uSaturation.value = CONFIG.colorSaturation;
+      particleMaterial.uniforms.uHueShift.value = CONFIG.hueShift;
+
+      // Update ring uniforms
+      ringMaterial.uniforms.uTime.value = time;
+      ringMaterial.uniforms.uAudioLevel.value = smoothedMicLevel; // Mic drives ring
+      ringMaterial.uniforms.uLowFreq.value = smoothedMicBands.low;
+      ringMaterial.uniforms.uDisplacement.value = CONFIG.ringDisplacement;
+      ringMaterial.uniforms.uSaturation.value = CONFIG.colorSaturation;
+      ringMaterial.uniforms.uHueShift.value = CONFIG.hueShift;
+
+      // Update ring geometry
+      updateRing();
+
+      // Rotate particle cloud
+      particles.rotation.z += CONFIG.rotationSpeed * delta;
+
+      // Subtle scale breathing
+      const breathScale = 1 + Math.sin(time * 0.5) * 0.02 * CONFIG.breathingIntensity;
+      particles.scale.setScalar(breathScale);
+      ring.scale.setScalar(breathScale);
+
+      // Update bloom
+      bloomPass.strength = CONFIG.bloomStrength;
+      bloomPass.threshold = CONFIG.bloomThreshold;
+      bloomPass.radius = CONFIG.bloomRadius;
+
+      // Update chromatic aberration
+      if (chromaticPass) {
+        chromaticPass.uniforms.uTime.value = time;
+        // Increase chromatic aberration slightly with audio
+        chromaticPass.uniforms.uIntensity.value = 0.002 + smoothedTrackLevel * 0.003;
+      }
+
+      // Render
+      composer.render();
+    }
+
+    // ============================================
+    // CONTROLS
+    // ============================================
+
+    function setupControls() {
+      // Logo upload
+      document.getElementById('upload-logo-btn').addEventListener('click', () => {
+        document.getElementById('logo-upload').click();
+      });
+
+      document.getElementById('logo-upload').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            const imageData = event.target.result;
+            await loadLogoFromImage(imageData);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Audio upload
+      document.getElementById('upload-audio-btn').addEventListener('click', () => {
+        document.getElementById('audio-upload').click();
+      });
+
+      document.getElementById('audio-upload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const audio = document.getElementById('agencer-audio');
+          const url = URL.createObjectURL(file);
+          audio.src = url;
+          audio._connected = false; // Reset connection flag
+          usingSynthAudio = false;
+
+          // Clean up synth if it was being used
+          synthOscillators.forEach(item => {
+            item.osc.stop();
+            item.osc.disconnect();
+          });
+          synthOscillators = [];
+          synthGain = null;
+
+          // Reset analyser
+          if (trackAnalyser) {
+            trackAnalyser.disconnect();
+            trackAnalyser = null;
+          }
+
+          console.log('Audio track loaded:', file.name);
+        }
+      });
+
+      // Handle audio track ending (for non-looping tracks)
+      document.getElementById('agencer-audio').addEventListener('ended', () => {
+        if (!document.getElementById('agencer-audio').loop) {
+          trackPlaying = false;
+          document.getElementById('track-btn').innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Play Agencer Voice
+          `;
+        }
+      });
+
+      // Microphone button
+      document.getElementById('mic-btn').addEventListener('click', () => {
+        if (micEnabled) {
+          disableMicrophone();
+        } else {
+          enableMicrophone();
+        }
+      });
+
+      // Track button
+      document.getElementById('track-btn').addEventListener('click', toggleTrack);
+
+      // Sliders
+      const sliders = [
+        'particleCount', 'particleSize', 'scatterIntensity', 'breathingIntensity',
+        'rotationSpeed', 'ringDisplacement', 'bloomStrength', 'bloomThreshold',
+        'bloomRadius', 'colorSaturation', 'hueShift'
+      ];
+
+      sliders.forEach(id => {
+        const slider = document.getElementById(id);
+        const valueDisplay = document.getElementById(id + '-val');
+
+        slider.addEventListener('input', () => {
+          const value = parseFloat(slider.value);
+          CONFIG[id] = value;
+
+          // Format display value
+          if (id === 'particleCount' || id === 'hueShift') {
+            valueDisplay.textContent = Math.round(value);
+          } else {
+            valueDisplay.textContent = value.toFixed(2);
+          }
+
+          // Special handling for particle count (requires rebuild)
+          if (id === 'particleCount') {
+            // Debounced rebuild
+            clearTimeout(slider.rebuildTimeout);
+            slider.rebuildTimeout = setTimeout(() => {
+              rebuildParticles();
+            }, 500);
+          }
+        });
+      });
+
+      // Preset buttons
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const presetIndex = parseInt(btn.dataset.preset);
+          loadPreset(presetIndex);
+
+          document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+
+      // Save preset
+      document.getElementById('save-preset').addEventListener('click', () => {
+        const currentPresetBtn = document.querySelector('.preset-btn.active');
+        const presetIndex = currentPresetBtn ? parseInt(currentPresetBtn.dataset.preset) : 0;
+        savePreset(presetIndex);
+        alert(`Preset ${presetIndex + 1} saved!`);
+      });
+
+      // Reset defaults
+      document.getElementById('reset-defaults').addEventListener('click', () => {
+        Object.assign(CONFIG, DEFAULTS);
+        updateSlidersFromConfig();
+      });
+
+      // Toggle controls panel
+      document.getElementById('toggle-controls').addEventListener('click', () => {
+        document.getElementById('controls').classList.remove('hidden');
+      });
+
+      // Load saved presets from localStorage
+      loadSavedPresets();
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Don't trigger shortcuts when typing in inputs
+        if (e.target.tagName === 'INPUT') return;
+
+        switch(e.key.toLowerCase()) {
+          case 'h':
+            // Toggle controls visibility
+            document.getElementById('controls').classList.toggle('hidden');
+            break;
+          case 'm':
+            // Toggle microphone
+            if (micEnabled) {
+              disableMicrophone();
+            } else {
+              enableMicrophone();
+            }
+            break;
+          case ' ':
+            // Toggle track playback
+            e.preventDefault();
+            toggleTrack();
+            break;
+          case 'r':
+            // Reset to defaults
+            Object.assign(CONFIG, DEFAULTS);
+            updateSlidersFromConfig();
+            break;
+        }
+      });
+
+      // Add keyboard shortcut hints
+      console.log('Keyboard shortcuts: H=toggle panel, M=toggle mic, Space=play/pause, R=reset');
+    }
+
+    function updateSlidersFromConfig() {
+      const sliders = [
+        'particleCount', 'particleSize', 'scatterIntensity', 'breathingIntensity',
+        'rotationSpeed', 'ringDisplacement', 'bloomStrength', 'bloomThreshold',
+        'bloomRadius', 'colorSaturation', 'hueShift'
+      ];
+
+      sliders.forEach(id => {
+        const slider = document.getElementById(id);
+        const valueDisplay = document.getElementById(id + '-val');
+        slider.value = CONFIG[id];
+
+        if (id === 'particleCount' || id === 'hueShift') {
+          valueDisplay.textContent = Math.round(CONFIG[id]);
+        } else {
+          valueDisplay.textContent = CONFIG[id].toFixed(2);
+        }
+      });
+    }
+
+    function savePreset(index) {
+      const presets = JSON.parse(localStorage.getItem('agencerAvatarPresets') || '{}');
+      presets[index] = { ...CONFIG };
+      localStorage.setItem('agencerAvatarPresets', JSON.stringify(presets));
+    }
+
+    function loadPreset(index) {
+      const presets = JSON.parse(localStorage.getItem('agencerAvatarPresets') || '{}');
+      if (presets[index]) {
+        Object.assign(CONFIG, presets[index]);
+        updateSlidersFromConfig();
+
+        // Rebuild particles if count changed
+        if (logoParticleData.length !== CONFIG.particleCount) {
+          rebuildParticles();
+        }
+      }
+    }
+
+    function loadSavedPresets() {
+      // Load last used preset if available
+      const lastPreset = localStorage.getItem('agencerAvatarLastPreset');
+      if (lastPreset !== null) {
+        loadPreset(parseInt(lastPreset));
+        document.querySelector(`.preset-btn[data-preset="${lastPreset}"]`)?.classList.add('active');
+      }
+    }
+
+    async function rebuildParticles() {
+      // Remove old particles
+      scene.remove(particles);
+      particleGeometry.dispose();
+      particleMaterial.dispose();
+
+      // Generate new particle data
+      logoParticleData = generateProceduralLogoData();
+
+      // Recreate particles
+      createParticles();
+    }
+
+    async function loadLogoFromImage(imageSrc) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const size = Math.min(img.width, img.height, 512);
+          canvas.width = size;
+          canvas.height = size;
+
+          // Draw centered and scaled
+          const scale = size / Math.max(img.width, img.height);
+          const w = img.width * scale;
+          const h = img.height * scale;
+          const x = (size - w) / 2;
+          const y = (size - h) / 2;
+
+          ctx.drawImage(img, x, y, w, h);
+          const imageData = ctx.getImageData(0, 0, size, size);
+          const data = imageData.data;
+
+          const candidates = [];
+
+          for (let py = 0; py < size; py++) {
+            for (let px = 0; px < size; px++) {
+              const i = (py * size + px) * 4;
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              const a = data[i + 3];
+
+              // Only include non-transparent pixels
+              if (a > 50) {
+                // Normalize position to -1 to 1 range
+                const nx = (px / size - 0.5) * 2;
+                const ny = (0.5 - py / size) * 2;
+
+                candidates.push({
+                  x: nx,
+                  y: ny,
+                  r: r / 255,
+                  g: g / 255,
+                  b: b / 255
+                });
+              }
+            }
+          }
+
+          // Shuffle and sample down to target count
+          const shuffled = candidates.sort(() => Math.random() - 0.5);
+          logoParticleData = shuffled.slice(0, CONFIG.particleCount);
+
+          // Rebuild the particle system
+          scene.remove(particles);
+          particleGeometry.dispose();
+          particleMaterial.dispose();
+          createParticles();
+
+          console.log(`Loaded logo with ${logoParticleData.length} particles from ${candidates.length} candidates`);
+          resolve();
+        };
+
+        img.onerror = () => {
+          console.error('Failed to load logo image');
+          resolve();
+        };
+
+        img.src = imageSrc;
+      });
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+
+      particleMaterial.uniforms.uPixelRatio.value = renderer.getPixelRatio();
+    }
+
+    // ============================================
+    // INITIALIZE
+    // ============================================
+
+    init();
+
+    // Expose for debugging
+    window.agencerAvatar = {
+      CONFIG,
+      scene,
+      camera,
+      particles,
+      ring,
+      rebuildParticles
+    };
+  </script>
+</body>
+</html>
