@@ -618,6 +618,7 @@
     let micData, trackData;
     let smoothedMicLevel = 0, smoothedTrackLevel = 0;
     let smoothedMicFFT = null, smoothedTrackFFT = null;
+    let micWaveform = null, smoothedWaveform = null;
     let clock, time = 0;
     let logoParticleData = [];
     let frameCount = 0, lastFpsTime = 0;
@@ -1016,42 +1017,27 @@
 
     function updateRingWaveform() {
       const positions = ringGeometry.attributes.position.array;
-      const fftData = smoothedMicFFT;
-      // Wave amplitude: 0-100 slider maps to 0-0.3 world units
-      const waveAmp = CONFIG.waveAmplitude / 100 * 0.3;
-
-      // Check if we have real audio data
-      let hasAudio = false;
-      if (fftData) {
-        for (let i = 0; i < fftData.length; i++) {
-          if (fftData[i] > 0.1) {
-            hasAudio = true;
-            break;
-          }
-        }
-      }
+      // Wave amplitude: 0-100 slider maps to 0-0.2 world units
+      const waveAmp = CONFIG.waveAmplitude / 100 * 0.2;
 
       for (let i = 0; i < RING_SEGMENTS; i++) {
         const angle = (i / RING_SEGMENTS) * Math.PI * 2;
         const i3 = i * 3;
 
-        let displacement = 0;
+        // Map ring segment to waveform sample
+        // This wraps the actual audio waveform around the circle
+        const waveformIndex = Math.floor((i / RING_SEGMENTS) * smoothedWaveform.length);
+        const waveformValue = smoothedWaveform[waveformIndex] || 0;
 
-        if (hasAudio && fftData) {
-          // Map ring position to FFT bin
-          const fftBin = Math.floor((i / RING_SEGMENTS) * fftData.length);
-          const fftValue = fftData[fftBin] || 0;
+        // Waveform displacement - the actual sine wave shape from the audio
+        // waveformValue is already -1 to 1, so it naturally goes inward and outward
+        const audioDisplacement = waveformValue * waveAmp * CONFIG.audioSensitivity;
 
-          // Bipolar displacement: wave goes BOTH inward and outward from center
-          // fftValue is 0-1, we want -0.5 to 0.5 range
-          displacement = (fftValue - 0.5) * 2 * waveAmp * CONFIG.audioSensitivity;
-        }
+        // Idle wave (gentle sine wave when no audio input)
+        const idleWave = Math.sin(angle * 3 + time * 1.2) * 0.02 * CONFIG.breathingIntensity;
+        const idleWave2 = Math.sin(angle * 5 - time * 0.7) * 0.01 * CONFIG.breathingIntensity;
 
-        // Idle wave (visible traveling wave when no audio)
-        const idleWave = Math.sin(angle * 4 + time * 1.5) * 0.03 * CONFIG.breathingIntensity;
-        const idleWave2 = Math.sin(angle * 2 - time * 0.8) * 0.015 * CONFIG.breathingIntensity;
-
-        const radius = RING_BASE_RADIUS + displacement + idleWave + idleWave2;
+        const radius = RING_BASE_RADIUS + audioDisplacement + idleWave + idleWave2;
 
         positions[i3] = Math.cos(angle) * radius;
         positions[i3 + 1] = Math.sin(angle) * radius;
@@ -1086,6 +1072,9 @@
       trackData = new Uint8Array(128);
       smoothedMicFFT = new Float32Array(128);
       smoothedTrackFFT = new Float32Array(128);
+      // Time domain data for actual waveform visualization
+      micWaveform = new Uint8Array(256);
+      smoothedWaveform = new Float32Array(256);
     }
 
     async function enableMicrophone() {
@@ -1106,6 +1095,9 @@
         micSource.connect(micAnalyser);
 
         micData = new Uint8Array(micAnalyser.frequencyBinCount);
+        // Time domain waveform for actual wave shape visualization
+        micWaveform = new Uint8Array(micAnalyser.fftSize);
+        smoothedWaveform = new Float32Array(micAnalyser.fftSize);
         micEnabled = true;
 
         document.getElementById('mic-status').classList.add('active');
@@ -1269,7 +1261,17 @@
       if (micEnabled && micAnalyser) {
         micAnalyser.getByteFrequencyData(micData);
 
-        // Smooth FFT for ring
+        // Get TIME DOMAIN waveform data - this is the actual wave shape!
+        micAnalyser.getByteTimeDomainData(micWaveform);
+
+        // Smooth the waveform for display
+        for (let i = 0; i < micWaveform.length; i++) {
+          // Convert from 0-255 (centered at 128) to -1 to 1
+          const target = (micWaveform[i] - 128) / 128;
+          smoothedWaveform[i] = lerp(smoothedWaveform[i], target, 0.4);
+        }
+
+        // Smooth FFT for particles
         for (let i = 0; i < micData.length; i++) {
           const target = micData[i] / 255;
           smoothedMicFFT[i] = lerp(smoothedMicFFT[i], target, 0.2);
@@ -1281,8 +1283,12 @@
         smoothedMicLevel = lerp(smoothedMicLevel, (sum / micData.length / 255) * sensitivity, 0.15);
       } else {
         smoothedMicLevel = lerp(smoothedMicLevel, 0, 0.05);
+        // Waveform settles to flat line (0)
+        for (let i = 0; i < smoothedWaveform.length; i++) {
+          smoothedWaveform[i] = lerp(smoothedWaveform[i], 0, 0.05);
+        }
         for (let i = 0; i < smoothedMicFFT.length; i++) {
-          smoothedMicFFT[i] = lerp(smoothedMicFFT[i], 0.5, 0.05); // Settle to center (no displacement)
+          smoothedMicFFT[i] = lerp(smoothedMicFFT[i], 0.5, 0.05);
         }
       }
 
