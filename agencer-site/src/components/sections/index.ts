@@ -1,0 +1,12 @@
+export { Hero } from "./Hero";
+export { TheProblem } from "./TheProblem";
+export { TheSolution } from "./TheSolution";
+export { OrchestraVideo } from "./OrchestraVideo";
+export { HowItWorks } from "./HowItWorks";
+export { ConnectsToAnything } from "./ConnectsToAnything";
+export { TotalRecall } from "./TotalRecall";
+export { VoiceFirst } from "./VoiceFirst";
+export { Security } from "./Security";
+export { Pricing } from "./Pricing";
+export { Founder } from "./Founder";
+export { FinalCTA } from "./FinalCTA";
