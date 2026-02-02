@@ -119,13 +119,13 @@ export function Security() {
           <SectionLabel>Security</SectionLabel>
         </motion.div>
 
-        {/* Headline - single line on desktop */}
+        {/* Headline - single line on desktop, centered */}
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="font-serif font-medium text-text-headline mb-12 lg:whitespace-nowrap"
+          className="font-serif font-medium text-text-headline mb-12 lg:whitespace-nowrap text-center mx-auto"
           style={{ fontSize: "clamp(1.75rem, 4vw, 3.5rem)" }}
         >
           Built for the world that watched agents fail.
