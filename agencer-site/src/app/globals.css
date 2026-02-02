@@ -152,6 +152,20 @@ html.lenis, html.lenis body {
   animation: logo-rotate 30s linear infinite;
 }
 
+/* Slow spin animation for logo */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
 /* Floating dots animations */
 @keyframes float-1 {
   0%, 100% {
