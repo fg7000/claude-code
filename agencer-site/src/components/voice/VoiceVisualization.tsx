@@ -150,31 +150,42 @@ export function VoiceVisualization({ size = 300, className = "" }: VoiceVisualiz
         ctx.shadowBlur = 0;
       }
 
-      // Draw orbiting dots
+      // Draw orbiting dots with breathing animation
       dots.forEach((dot) => {
         const pulse = prefersReducedMotion
           ? 0
           : Math.sin(time * dot.speed + dot.phase) * dot.amplitude;
 
-        const currentRadius = orbitRadius + dot.orbitOffset + pulse * 0.3;
+        // Radial position pulses in and out
+        const currentRadius = orbitRadius + dot.orbitOffset + pulse;
         const x = centerX + Math.cos(dot.angle + rotation) * currentRadius;
         const y = centerY + Math.sin(dot.angle + rotation) * currentRadius;
 
         const color = spectrumColors[dot.colorIndex];
-        const pulseOpacity = 0.5 + (Math.sin(time * dot.speed + dot.phase) * 0.3);
 
-        // Glow
+        // BREATHING EFFECT: dot size grows and shrinks with the pulse
+        const normalizedPulse = pulse / dot.amplitude; // -1 to 1
+        const breathingSize = dot.size + normalizedPulse * 2; // size varies by ±2px
+        const breathingOpacity = 0.6 + normalizedPulse * 0.4; // opacity varies 0.2 to 1.0
+
+        // Outer glow (also breathes)
         ctx.beginPath();
-        ctx.arc(x, y, dot.size * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${pulseOpacity * 0.3})`;
+        ctx.arc(x, y, breathingSize * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${breathingOpacity * 0.25})`;
         ctx.fill();
 
-        // Core dot
+        // Middle glow
         ctx.beginPath();
-        ctx.arc(x, y, dot.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${pulseOpacity + 0.3})`;
-        ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.6)`;
-        ctx.shadowBlur = 6;
+        ctx.arc(x, y, breathingSize * 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${breathingOpacity * 0.4})`;
+        ctx.fill();
+
+        // Core dot (breathing size)
+        ctx.beginPath();
+        ctx.arc(x, y, breathingSize, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${breathingOpacity})`;
+        ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`;
+        ctx.shadowBlur = 10;
         ctx.fill();
         ctx.shadowBlur = 0;
       });
