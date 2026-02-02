@@ -74,9 +74,13 @@ function NetworkGlobe({ progress }: { progress: number }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Store display dimensions
+    let displayWidth = 0;
+    let displayHeight = 0;
+
     const animate = () => {
-      const width = canvas.width;
-      const height = canvas.height;
+      const width = displayWidth;
+      const height = displayHeight;
       const centerX = width / 2;
       const centerY = height / 2;
       const radius = Math.min(width, height) * 0.38;
@@ -201,8 +205,11 @@ function NetworkGlobe({ progress }: { progress: number }) {
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
+      displayWidth = rect.width;
+      displayHeight = rect.height;
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
       ctx.scale(dpr, dpr);
     };
 
@@ -260,9 +267,11 @@ export function Network() {
       className="relative min-h-[200vh] bg-[#0a0a0a]"
     >
       <div className="sticky top-0 min-h-screen flex flex-col">
-        {/* Globe visualization - 60vh */}
-        <div className="relative h-[60vh] w-full">
-          <NetworkGlobe progress={scrollProgress} />
+        {/* Globe visualization - 50vh, centered */}
+        <div className="relative h-[50vh] w-full flex items-center justify-center">
+          <div className="w-full h-full max-w-[800px] mx-auto">
+            <NetworkGlobe progress={scrollProgress} />
+          </div>
         </div>
 
         {/* Text content */}
@@ -274,7 +283,7 @@ export function Network() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <SectionLabel>The Network</SectionLabel>
+              <SectionLabel>The Agents Are Networked</SectionLabel>
             </motion.div>
 
             <motion.h2
