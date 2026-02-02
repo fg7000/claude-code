@@ -2,12 +2,8 @@
 
 import { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { Mic, Calendar, Clock, Phone, AlertCircle, PhoneCall, RotateCcw, Brain, GitBranch, Play, Search, CheckCircle, FileText, Send, Image, Share2, BarChart3, Folder } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 interface FlowNode {
   label: string;
@@ -89,13 +85,64 @@ const flows: TaskFlow[] = [
   },
 ];
 
-function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: number; index: number }) {
-  // Slower timing: each flow takes longer to complete, guiding the eye left to right
-  const flowStart = index * 0.22;
-  const flowProgress = Math.max(0, Math.min(1, (progress - flowStart) / 0.4));
+function FlowStream({ flow, index }: { flow: TaskFlow; index: number }) {
+  const flowRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [activeNodeIndex, setActiveNodeIndex] = useState(-1); // -1 means not started, 0+ means which node is active
+  const hasAnimated = useRef(false);
+
+  // Detect when this flow becomes visible/centered on screen
+  useEffect(() => {
+    if (!flowRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasAnimated.current) {
+            setIsVisible(true);
+            hasAnimated.current = true;
+          }
+        });
+      },
+      {
+        threshold: 0.5, // Trigger when 50% of the element is visible
+        rootMargin: "-10% 0px -10% 0px" // Trigger when closer to center
+      }
+    );
+
+    observer.observe(flowRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Time-based animation: light up nodes one by one after becoming visible
+  useEffect(() => {
+    if (!isVisible) return;
+
+    // Start the origin point immediately
+    setActiveNodeIndex(0);
+
+    // Then light up each node one by one with 1 second delay
+    const totalNodes = flow.nodes.length;
+    let currentNode = 0;
+
+    const interval = setInterval(() => {
+      currentNode++;
+      if (currentNode <= totalNodes) {
+        setActiveNodeIndex(currentNode);
+      } else {
+        clearInterval(interval);
+      }
+    }, 1000); // 1 second between each node
+
+    return () => clearInterval(interval);
+  }, [isVisible, flow.nodes.length]);
+
+  const isStarted = activeNodeIndex >= 0;
+  const allComplete = activeNodeIndex > flow.nodes.length;
 
   return (
     <motion.div
+      ref={flowRef}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
@@ -141,8 +188,8 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
           <div
             className="w-3 h-3 rounded-full flex-shrink-0 transition-all duration-500"
             style={{
-              backgroundColor: flowProgress > 0 ? flow.color : `${flow.color}40`,
-              boxShadow: flowProgress > 0 ? `0 0 12px 4px ${flow.color}60` : 'none'
+              backgroundColor: isStarted ? flow.color : `${flow.color}40`,
+              boxShadow: isStarted ? `0 0 12px 4px ${flow.color}60` : 'none'
             }}
           />
 
@@ -150,15 +197,14 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
           <div
             className="h-px w-10 md:w-16 flex-shrink-0 transition-all duration-500"
             style={{
-              background: flowProgress > 0 ? `${flow.color}50` : `${flow.color}30`,
+              background: isStarted ? `${flow.color}50` : `${flow.color}30`,
               opacity: 0.5
             }}
           />
 
           {/* Nodes */}
           {flow.nodes.map((node, nodeIndex) => {
-            const nodeProgress = flowProgress > (nodeIndex + 1) / (flow.nodes.length + 1);
-            const isActive = nodeProgress;
+            const isActive = activeNodeIndex > nodeIndex; // Node is active if we've passed it
 
             return (
               <div key={nodeIndex} className="flex items-center gap-6 md:gap-10 flex-shrink-0">
@@ -214,7 +260,7 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
                   <div
                     className="h-px w-10 md:w-16 flex-shrink-0 transition-all duration-500"
                     style={{
-                      background: nodeProgress ? `${flow.color}50` : `${flow.color}30`,
+                      background: isActive ? `${flow.color}50` : `${flow.color}30`,
                       opacity: 0.5
                     }}
                   />
@@ -228,7 +274,7 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
       {/* Tagline - more vertical spacing */}
       <p
         className="mt-8 mb-12 pl-4 md:pl-12 font-mono text-sm md:text-base transition-all duration-500"
-        style={{ color: flowProgress > 0.8 ? flow.color : 'var(--text-secondary)' }}
+        style={{ color: allComplete ? flow.color : 'var(--text-secondary)' }}
       >
         {flow.tagline}
       </p>
@@ -237,35 +283,12 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
 }
 
 export function HowItWorks() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!sectionRef.current || prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: "top top",
-        end: "bottom bottom",
-        scrub: 1,
-        onUpdate: (self) => {
-          setScrollProgress(self.progress);
-        },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
     <section
-      ref={sectionRef}
       id="how-it-works"
-      className="relative min-h-[300vh] bg-bg-primary"
+      className="relative bg-bg-primary py-20 md:py-32"
     >
-      <div className="sticky top-0 min-h-screen py-20 md:py-32 overflow-hidden">
+      <div className="min-h-screen">
         {/* Background wave glow */}
         <div
           className="absolute inset-0 pointer-events-none opacity-30"
@@ -315,7 +338,6 @@ export function HowItWorks() {
               <FlowStream
                 key={flow.id}
                 flow={flow}
-                progress={scrollProgress}
                 index={index}
               />
             ))}
