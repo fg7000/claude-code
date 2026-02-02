@@ -8,6 +8,7 @@ import { ConnectsToAnything } from "@/components/sections/ConnectsToAnything";
 import { TotalRecall } from "@/components/sections/TotalRecall";
 import { VoiceFirst } from "@/components/sections/VoiceFirst";
 import { Security } from "@/components/sections/Security";
+import { Network } from "@/components/sections/Network";
 import { Pricing } from "@/components/sections/Pricing";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 
@@ -24,6 +25,7 @@ export default function Home() {
       <TotalRecall />
       <VoiceFirst />
       <Security />
+      <Network />
       <Pricing />
       <FinalCTA />
     </>
