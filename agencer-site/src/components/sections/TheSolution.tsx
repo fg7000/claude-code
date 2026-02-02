@@ -76,13 +76,6 @@ export function TheSolution() {
               className="w-full max-w-[400px]"
             >
               <GlassPanel className="p-6 h-full flex flex-col" hover>
-                {/* Voice waveform icon */}
-                <div className="flex gap-1 items-end h-6 mb-4">
-                  <div className="w-1 h-3 bg-white/60 rounded-full" />
-                  <div className="w-1 h-5 bg-white/60 rounded-full" />
-                  <div className="w-1 h-4 bg-white/60 rounded-full" />
-                </div>
-
                 {/* Quote */}
                 <p className="font-serif italic text-text-headline text-lg leading-relaxed mb-4">
                   &ldquo;{card.quote}&rdquo;
