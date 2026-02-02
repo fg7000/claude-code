@@ -25,82 +25,91 @@ const DEMO_LINES = [
 interface AgencerLogoProps {
   size?: number;
   bladeOpacities: number[];
-  ringScale: number;
+  ringBrightness: number;
   ringGlow: number;
+  idlePulse?: number;
 }
 
-// Decomposed Agencer Logo with individually addressable blades
-function AgencerLogo({ size = 40, bladeOpacities, ringScale, ringGlow }: AgencerLogoProps) {
+// Decomposed Agencer Logo - blades stay in EXACT formation
+// Only opacity/brightness/glow changes, NEVER position or transform
+function AgencerLogo({
+  size = 40,
+  bladeOpacities,
+  ringBrightness = 0.1,
+  ringGlow = 0,
+  idlePulse = 0
+}: AgencerLogoProps) {
   const centerX = size / 2;
   const centerY = size / 2;
-  const outerRadius = size * 0.42;
-  const innerRadius = size * 0.12;
+  const bladeOuterRadius = size * 0.38;
+  const bladeInnerRadius = size * 0.08;
+  const ringRadius = size * 0.46; // Ring sits outside blade tips with gap
 
   return (
     <svg
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      className="transition-transform"
-      style={{
-        transform: `scale(${ringScale})`,
-        filter: ringGlow > 0 ? `drop-shadow(0 0 ${ringGlow * 8}px rgba(245, 158, 11, ${ringGlow * 0.3}))` : undefined,
-      }}
+      style={{ overflow: "visible" }}
     >
-      {/* Outer ring */}
+      {/* Outer ring - separate from blades, animates on user speaking */}
       <circle
         cx={centerX}
         cy={centerY}
-        r={outerRadius}
+        r={ringRadius}
         fill="none"
-        stroke="rgba(255, 255, 255, 0.2)"
-        strokeWidth={size * 0.03}
+        stroke={`rgba(255, 255, 255, ${0.1 + ringBrightness * 0.3})`}
+        strokeWidth={1.5}
+        style={{
+          filter: ringGlow > 0
+            ? `drop-shadow(0 0 ${ringGlow * 12}px rgba(212, 168, 83, ${ringGlow * 0.5}))`
+            : undefined,
+          transition: "stroke 0.1s ease-out",
+        }}
       />
 
-      {/* Inner blades - colorful petal/wedge elements */}
+      {/* Inner blades - colorful petal shapes that NEVER move position */}
       {BLADE_COLORS.map((color, index) => {
         const totalBlades = BLADE_COLORS.length;
         const anglePerBlade = (Math.PI * 2) / totalBlades;
-        const startAngle = (index / totalBlades) * Math.PI * 2 - Math.PI / 2;
-        const endAngle = startAngle + anglePerBlade * 0.7; // 70% of the segment width
+        const bladeAngle = (index / totalBlades) * Math.PI * 2 - Math.PI / 2;
 
-        // Create a wedge/petal shape from center outward
-        const innerR = innerRadius;
-        const outerR = outerRadius * 0.85;
+        // Each blade is a teardrop/petal shape pointing outward
+        const tipX = centerX + Math.cos(bladeAngle) * bladeOuterRadius;
+        const tipY = centerY + Math.sin(bladeAngle) * bladeOuterRadius;
 
-        // Start point (inner arc start)
-        const x1 = centerX + Math.cos(startAngle) * innerR;
-        const y1 = centerY + Math.sin(startAngle) * innerR;
+        // Base of blade (near center)
+        const baseX = centerX + Math.cos(bladeAngle) * bladeInnerRadius;
+        const baseY = centerY + Math.sin(bladeAngle) * bladeInnerRadius;
 
-        // Inner arc end
-        const x2 = centerX + Math.cos(endAngle) * innerR;
-        const y2 = centerY + Math.sin(endAngle) * innerR;
+        // Control points for the curved sides
+        const spreadAngle = anglePerBlade * 0.35;
+        const midRadius = (bladeOuterRadius + bladeInnerRadius) / 2;
 
-        // Outer arc start
-        const x3 = centerX + Math.cos(endAngle) * outerR;
-        const y3 = centerY + Math.sin(endAngle) * outerR;
+        const leftCtrlX = centerX + Math.cos(bladeAngle - spreadAngle) * midRadius;
+        const leftCtrlY = centerY + Math.sin(bladeAngle - spreadAngle) * midRadius;
+        const rightCtrlX = centerX + Math.cos(bladeAngle + spreadAngle) * midRadius;
+        const rightCtrlY = centerY + Math.sin(bladeAngle + spreadAngle) * midRadius;
 
-        // Outer arc end
-        const x4 = centerX + Math.cos(startAngle) * outerR;
-        const y4 = centerY + Math.sin(startAngle) * outerR;
-
-        const opacity = bladeOpacities[index] ?? 0.4;
-        const glowAmount = opacity > 0.6 ? (opacity - 0.4) * 20 : 0;
+        const baseOpacity = 0.5 + idlePulse * 0.05;
+        const opacity = bladeOpacities[index] ?? baseOpacity;
+        const isFlashing = opacity > 0.7;
 
         return (
           <path
             key={index}
             d={`
-              M ${x1} ${y1}
-              A ${innerR} ${innerR} 0 0 1 ${x2} ${y2}
-              L ${x3} ${y3}
-              A ${outerR} ${outerR} 0 0 0 ${x4} ${y4}
+              M ${baseX} ${baseY}
+              Q ${leftCtrlX} ${leftCtrlY} ${tipX} ${tipY}
+              Q ${rightCtrlX} ${rightCtrlY} ${baseX} ${baseY}
               Z
             `}
             fill={color}
             style={{
               opacity,
-              filter: glowAmount > 0 ? `drop-shadow(0 0 ${glowAmount}px ${color})` : undefined,
+              filter: isFlashing
+                ? `drop-shadow(0 0 ${(opacity - 0.5) * 16}px ${color})`
+                : undefined,
               transition: "opacity 0.15s ease-out",
             }}
           />
@@ -111,14 +120,60 @@ function AgencerLogo({ size = 40, bladeOpacities, ringScale, ringGlow }: Agencer
       <circle
         cx={centerX}
         cy={centerY}
-        r={innerRadius * 0.7}
-        fill="rgba(255, 255, 255, 0.9)"
+        r={bladeInnerRadius * 0.6}
+        fill={`rgba(255, 255, 255, ${0.85 + idlePulse * 0.1})`}
       />
     </svg>
   );
 }
 
-// Speech bubble component
+// Text display component (no bubble styling)
+interface TextDisplayProps {
+  words: string[];
+  currentWordIndex: number;
+  showMicIcon: boolean;
+}
+
+function TextDisplay({ words, currentWordIndex, showMicIcon }: TextDisplayProps) {
+  if (currentWordIndex < 0) return null;
+
+  return (
+    <p
+      className="text-center leading-relaxed px-4"
+      style={{
+        color: "rgba(255, 255, 255, 0.8)",
+        fontSize: "1rem",
+        maxWidth: "90%",
+        margin: "0 auto",
+      }}
+    >
+      {words.slice(0, currentWordIndex + 1).map((word, idx) => {
+        const isMicWord = showMicIcon && word === "mic";
+        return (
+          <span key={idx}>
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
+            >
+              {word}
+            </motion.span>
+            {isMicWord && (
+              <MicOff
+                className="inline-block mx-1 animate-pulse"
+                size={16}
+                style={{ color: "var(--accent-warm)" }}
+              />
+            )}
+            {idx < currentWordIndex && " "}
+          </span>
+        );
+      })}
+    </p>
+  );
+}
+
+// Collapsed widget speech bubble
 interface SpeechBubbleProps {
   words: string[];
   currentWordIndex: number;
@@ -175,8 +230,6 @@ function SpeechBubble({ words, currentWordIndex, isVisible, showMicIcon }: Speec
                 );
               })}
             </p>
-
-            {/* Caret pointing to widget */}
             <div
               className="absolute -bottom-2 right-5 w-3 h-3 rotate-45"
               style={{
@@ -192,29 +245,20 @@ function SpeechBubble({ words, currentWordIndex, isVisible, showMicIcon }: Speec
   );
 }
 
-// Mic permission toast
-function MicToast({ isVisible }: { isVisible: boolean }) {
+// Mic permission prompt
+function MicPrompt({ isVisible }: { isVisible: boolean }) {
   return (
     <AnimatePresence>
       {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="absolute bottom-full mb-24 right-0 whitespace-nowrap"
+          className="text-center font-mono text-[0.8rem] mt-4"
+          style={{ color: "var(--accent-warm)" }}
         >
-          <p
-            className="text-[0.8rem] font-mono px-3 py-2 rounded-lg"
-            style={{
-              color: "var(--accent-warm)",
-              background: "rgba(0, 0, 0, 0.6)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-          >
-            🎙 Unmute your microphone to talk to Agencer
-          </p>
-        </motion.div>
+          🎙 Unmute your microphone to talk to Agencer
+        </motion.p>
       )}
     </AnimatePresence>
   );
@@ -229,13 +273,13 @@ export function VoiceWidget() {
 
   // Animation states
   const [bladeOpacities, setBladeOpacities] = useState<number[]>(
-    BLADE_COLORS.map(() => 0.4)
+    BLADE_COLORS.map(() => 0.5)
   );
-  const [ringScale, setRingScale] = useState(1);
+  const [ringBrightness, setRingBrightness] = useState(0);
   const [ringGlow, setRingGlow] = useState(0);
+  const [idlePulse, setIdlePulse] = useState(0);
 
   // Demo state
-  const [demoActive, setDemoActive] = useState(false);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [currentWords, setCurrentWords] = useState<string[]>([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
@@ -243,14 +287,36 @@ export function VoiceWidget() {
   const [demoCompleted, setDemoCompleted] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
 
-  // Mic permission state
-  const [showMicToast, setShowMicToast] = useState(false);
-  const [micPermissionChecked, setMicPermissionChecked] = useState(false);
+  // Panel demo state (separate from collapsed widget demo)
+  const [panelDemoStarted, setPanelDemoStarted] = useState(false);
+  const [panelWords, setPanelWords] = useState<string[]>([]);
+  const [panelWordIndex, setPanelWordIndex] = useState(-1);
+  const [panelLineIndex, setPanelLineIndex] = useState(0);
+  const [showMicPrompt, setShowMicPrompt] = useState(false);
+  const [micGranted, setMicGranted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const demoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const panelDemoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ambientIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const idlePulseRef = useRef<NodeJS.Timeout | null>(null);
   const lastFlashedBlade = useRef<number>(-1);
   const animationFrameRef = useRef<number | null>(null);
+
+  // Idle pulse animation (subtle breathing when idle)
+  useEffect(() => {
+    let frame = 0;
+    const animate = () => {
+      frame += 0.02;
+      const pulse = Math.sin(frame) * 0.5 + 0.5; // 0 to 1
+      setIdlePulse(pulse);
+      idlePulseRef.current = setTimeout(animate, 50);
+    };
+    animate();
+    return () => {
+      if (idlePulseRef.current) clearTimeout(idlePulseRef.current);
+    };
+  }, []);
 
   // Flash a random blade (not the same as last time)
   const flashRandomBlade = useCallback(() => {
@@ -261,27 +327,22 @@ export function VoiceWidget() {
 
     lastFlashedBlade.current = nextBlade;
 
-    // Set the blade to full brightness
     setBladeOpacities(prev => {
       const newOpacities = [...prev];
       newOpacities[nextBlade] = 1;
       return newOpacities;
     });
 
-    // Fade back to base over 300ms using requestAnimationFrame
     const startTime = performance.now();
     const duration = 300;
-    const startOpacity = 1;
-    const endOpacity = 0.4;
 
     const animate = (currentTime: number) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const currentOpacity = startOpacity - (startOpacity - endOpacity) * progress;
+      const currentOpacity = 1 - (1 - 0.5) * progress;
 
       setBladeOpacities(prev => {
         const newOpacities = [...prev];
-        // Only update if this blade hasn't been flashed again
         if (newOpacities[nextBlade] !== 1) {
           newOpacities[nextBlade] = currentOpacity;
         }
@@ -296,17 +357,12 @@ export function VoiceWidget() {
     animationFrameRef.current = requestAnimationFrame(animate);
   }, []);
 
-  // Start ambient twinkle (one flash every ~1.5 seconds)
+  // Start ambient twinkle
   const startAmbientTwinkle = useCallback(() => {
-    if (ambientIntervalRef.current) {
-      clearInterval(ambientIntervalRef.current);
-    }
-    ambientIntervalRef.current = setInterval(() => {
-      flashRandomBlade();
-    }, 1500);
+    if (ambientIntervalRef.current) clearInterval(ambientIntervalRef.current);
+    ambientIntervalRef.current = setInterval(flashRandomBlade, 2000);
   }, [flashRandomBlade]);
 
-  // Stop ambient twinkle
   const stopAmbientTwinkle = useCallback(() => {
     if (ambientIntervalRef.current) {
       clearInterval(ambientIntervalRef.current);
@@ -314,7 +370,7 @@ export function VoiceWidget() {
     }
   }, []);
 
-  // Type out a line word by word
+  // Type out a line word by word (for collapsed widget)
   const typeOutLine = useCallback((line: string, lineIndex: number, onComplete: () => void) => {
     const words = line.split(" ");
     setCurrentWords(words);
@@ -333,73 +389,48 @@ export function VoiceWidget() {
       flashRandomBlade();
 
       const word = words[wordIdx];
-      let delay = 250 + Math.random() * 100; // 250-350ms base
+      let delay = 250 + Math.random() * 100;
 
-      // Add pauses after punctuation
-      if (word.endsWith(",")) {
-        delay = 600;
-      } else if (word.endsWith(".") || word.endsWith("?") || word.endsWith("!")) {
-        delay = 900;
-      }
+      if (word.endsWith(",")) delay = 600;
+      else if (word.endsWith(".") || word.endsWith("?") || word.endsWith("!")) delay = 900;
 
       wordIdx++;
       demoTimeoutRef.current = setTimeout(typeNextWord, delay);
     };
 
-    // Start typing after a brief moment
     demoTimeoutRef.current = setTimeout(typeNextWord, 300);
   }, [flashRandomBlade]);
 
-  // Run the demo sequence
+  // Run demo for collapsed widget
   const runDemo = useCallback(() => {
     if (userInteracted || isOpen) return;
 
-    setDemoActive(true);
     stopAmbientTwinkle();
 
     const playLine = (lineIndex: number) => {
-      if (userInteracted || isOpen) {
-        setDemoActive(false);
-        return;
-      }
+      if (userInteracted || isOpen) return;
 
       if (lineIndex >= DEMO_LINES.length) {
-        // Demo completed - start ambient twinkle and show mic toast if needed
         setDemoCompleted(true);
         startAmbientTwinkle();
 
-        // Check mic permission and show toast if needed
-        if (!micPermissionChecked) {
-          checkMicPermission();
-        }
-
-        // Loop after 10 seconds
         demoTimeoutRef.current = setTimeout(() => {
           if (!userInteracted && !isOpen) {
             setShowSpeechBubble(false);
             setDemoCompleted(false);
-            demoTimeoutRef.current = setTimeout(() => {
-              runDemo();
-            }, 500);
+            demoTimeoutRef.current = setTimeout(runDemo, 500);
           }
         }, 10000);
-
         return;
       }
 
       setCurrentLineIndex(lineIndex);
-
       typeOutLine(DEMO_LINES[lineIndex], lineIndex, () => {
-        // Pause after line completes
         demoTimeoutRef.current = setTimeout(() => {
           if (lineIndex < DEMO_LINES.length - 1) {
-            // Clear bubble and move to next line
             setShowSpeechBubble(false);
-            demoTimeoutRef.current = setTimeout(() => {
-              playLine(lineIndex + 1);
-            }, 300);
+            demoTimeoutRef.current = setTimeout(() => playLine(lineIndex + 1), 300);
           } else {
-            // Last line - keep visible
             playLine(lineIndex + 1);
           }
         }, 1500);
@@ -407,73 +438,129 @@ export function VoiceWidget() {
     };
 
     playLine(0);
-  }, [userInteracted, isOpen, typeOutLine, stopAmbientTwinkle, startAmbientTwinkle, micPermissionChecked]);
+  }, [userInteracted, isOpen, typeOutLine, stopAmbientTwinkle, startAmbientTwinkle]);
 
-  // Check microphone permission
+  // Type out line for panel demo
+  const typeOutPanelLine = useCallback((line: string, lineIndex: number, onComplete: () => void) => {
+    const words = line.split(" ");
+    setPanelWords(words);
+    setPanelWordIndex(-1);
+
+    let wordIdx = 0;
+
+    const typeNextWord = () => {
+      if (wordIdx >= words.length) {
+        onComplete();
+        return;
+      }
+
+      setPanelWordIndex(wordIdx);
+      flashRandomBlade();
+
+      const word = words[wordIdx];
+      let delay = 250 + Math.random() * 100;
+
+      if (word.endsWith(",")) delay = 600;
+      else if (word.endsWith(".") || word.endsWith("?") || word.endsWith("!")) delay = 900;
+
+      wordIdx++;
+      panelDemoTimeoutRef.current = setTimeout(typeNextWord, delay);
+    };
+
+    panelDemoTimeoutRef.current = setTimeout(typeNextWord, 300);
+  }, [flashRandomBlade]);
+
+  // Run demo in expanded panel
+  const runPanelDemo = useCallback(() => {
+    if (panelDemoStarted) return;
+    setPanelDemoStarted(true);
+
+    const playLine = (lineIndex: number) => {
+      if (!isOpen) return;
+
+      if (lineIndex >= DEMO_LINES.length) {
+        startAmbientTwinkle();
+        // Request mic permission after demo
+        checkMicPermission();
+        return;
+      }
+
+      setPanelLineIndex(lineIndex);
+      typeOutPanelLine(DEMO_LINES[lineIndex], lineIndex, () => {
+        panelDemoTimeoutRef.current = setTimeout(() => {
+          if (lineIndex < DEMO_LINES.length - 1) {
+            setPanelWords([]);
+            setPanelWordIndex(-1);
+            panelDemoTimeoutRef.current = setTimeout(() => playLine(lineIndex + 1), 300);
+          } else {
+            playLine(lineIndex + 1);
+          }
+        }, 1500);
+      });
+    };
+
+    // Start after a brief pause
+    panelDemoTimeoutRef.current = setTimeout(() => playLine(0), 500);
+  }, [isOpen, panelDemoStarted, typeOutPanelLine, startAmbientTwinkle]);
+
+  // Check mic permission
   const checkMicPermission = useCallback(async () => {
-    setMicPermissionChecked(true);
-
     try {
-      // Check if permission is already granted
-      const permissionStatus = await navigator.permissions.query({ name: "microphone" as PermissionName });
-
-      if (permissionStatus.state === "denied" || permissionStatus.state === "prompt") {
-        setShowMicToast(true);
-        // Hide toast after 8 seconds
-        setTimeout(() => {
-          setShowMicToast(false);
-        }, 8000);
-      }
-
-      // Listen for permission changes
-      permissionStatus.onchange = () => {
-        if (permissionStatus.state === "granted") {
-          setShowMicToast(false);
-        }
-      };
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+      setMicGranted(true);
+      setShowMicPrompt(false);
+      setIsListening(true);
     } catch {
-      // Fallback: try to get user media to check permission
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop());
-        setShowMicToast(false);
-      } catch {
-        setShowMicToast(true);
-        setTimeout(() => {
-          setShowMicToast(false);
-        }, 8000);
-      }
+      setShowMicPrompt(true);
+      setTimeout(() => setShowMicPrompt(false), 8000);
     }
   }, []);
 
-  // Start demo after delay or on scroll
+  // Simulate ring breathing when listening
+  useEffect(() => {
+    if (!isListening) {
+      setRingBrightness(0);
+      setRingGlow(0);
+      return;
+    }
+
+    // Simulate mic input with gentle pulse
+    let frame = 0;
+    const animate = () => {
+      frame += 0.08;
+      const val = (Math.sin(frame) * 0.5 + 0.5) * 0.6;
+      setRingBrightness(val);
+      setRingGlow(val * 0.5);
+    };
+    const interval = setInterval(animate, 50);
+    return () => clearInterval(interval);
+  }, [isListening]);
+
+  // Start demo for collapsed widget after delay
   useEffect(() => {
     if (isOpen || userInteracted) return;
 
-    // Start demo after 4 seconds
     const initialTimeout = setTimeout(() => {
-      if (!isOpen && !userInteracted) {
-        runDemo();
-      }
+      if (!isOpen && !userInteracted) runDemo();
     }, 4000);
 
-    return () => {
-      clearTimeout(initialTimeout);
-    };
+    return () => clearTimeout(initialTimeout);
   }, [isOpen, userInteracted, runDemo]);
+
+  // Start panel demo when opened
+  useEffect(() => {
+    if (isOpen && !panelDemoStarted) {
+      runPanelDemo();
+    }
+  }, [isOpen, panelDemoStarted, runPanelDemo]);
 
   // Handle user interaction
   const handleUserInteraction = useCallback(() => {
     setUserInteracted(true);
-    setDemoActive(false);
     stopAmbientTwinkle();
-
-    if (demoTimeoutRef.current) {
-      clearTimeout(demoTimeoutRef.current);
-    }
-
+    if (demoTimeoutRef.current) clearTimeout(demoTimeoutRef.current);
     setShowSpeechBubble(false);
-    setShowMicToast(false);
   }, [stopAmbientTwinkle]);
 
   // Open widget event listener
@@ -483,10 +570,7 @@ export function VoiceWidget() {
       setIsOpen(true);
     };
     window.addEventListener("openVoiceWidget", handleOpenWidget);
-
-    return () => {
-      window.removeEventListener("openVoiceWidget", handleOpenWidget);
-    };
+    return () => window.removeEventListener("openVoiceWidget", handleOpenWidget);
   }, [handleUserInteraction]);
 
   // Scroll visibility handling
@@ -498,47 +582,31 @@ export function VoiceWidget() {
 
       if (velocity > 50 && !isOpen) {
         setIsVisible(false);
-
-        if (scrollTimeoutRef.current) {
-          clearTimeout(scrollTimeoutRef.current);
-        }
-
-        scrollTimeoutRef.current = setTimeout(() => {
-          setIsVisible(true);
-        }, 500);
+        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = setTimeout(() => setIsVisible(true), 500);
       }
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, [isOpen]);
 
-  // Cleanup on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
-      if (demoTimeoutRef.current) {
-        clearTimeout(demoTimeoutRef.current);
-      }
-      if (ambientIntervalRef.current) {
-        clearInterval(ambientIntervalRef.current);
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+      if (demoTimeoutRef.current) clearTimeout(demoTimeoutRef.current);
+      if (panelDemoTimeoutRef.current) clearTimeout(panelDemoTimeoutRef.current);
+      if (ambientIntervalRef.current) clearInterval(ambientIntervalRef.current);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim()) {
-      setMessage("");
-    }
+    if (message.trim()) setMessage("");
   };
 
   const handleWidgetClick = () => {
@@ -548,7 +616,7 @@ export function VoiceWidget() {
 
   return (
     <>
-      {/* Collapsed Widget Button with Speech Bubble */}
+      {/* Collapsed Widget */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
@@ -559,10 +627,6 @@ export function VoiceWidget() {
             className="fixed bottom-6 right-6 z-40 md:bottom-8 md:right-8"
             style={{ pointerEvents: isVisible ? "auto" : "none" }}
           >
-            {/* Mic Toast */}
-            <MicToast isVisible={showMicToast && demoCompleted} />
-
-            {/* Speech Bubble */}
             <SpeechBubble
               words={currentWords}
               currentWordIndex={currentWordIndex}
@@ -575,30 +639,27 @@ export function VoiceWidget() {
               className="group relative"
               aria-label="Open voice assistant"
             >
-              {/* Inner button with animated logo */}
-              <div className="relative w-14 h-14 md:w-14 md:h-14 rounded-full bg-bg-primary border border-glass-border flex items-center justify-center">
+              <div className="relative w-14 h-14 rounded-full bg-bg-primary border border-glass-border flex items-center justify-center">
                 <AgencerLogo
                   size={40}
                   bladeOpacities={bladeOpacities}
-                  ringScale={ringScale}
+                  ringBrightness={ringBrightness}
                   ringGlow={ringGlow}
+                  idlePulse={idlePulse}
                 />
               </div>
-
-              {/* Hover label */}
               <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap px-3 py-1.5 rounded-lg bg-bg-tertiary text-sm text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
-                Talk to me instead
+                Talk to me
               </span>
             </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Expanded Widget Panel */}
+      {/* Expanded Voice Panel */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Mobile overlay backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -612,76 +673,85 @@ export function VoiceWidget() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed z-50 glass-panel overflow-hidden
-                inset-4 md:inset-auto md:bottom-8 md:right-8 md:w-[360px] md:h-[500px]"
+              className="fixed z-50 overflow-hidden flex flex-col
+                inset-4 md:inset-auto md:bottom-8 md:right-8 md:w-[380px] md:h-[520px]"
+              style={{
+                background: "rgba(15, 15, 15, 0.95)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+                borderRadius: "16px",
+              }}
             >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-glass-border">
-                <div className="flex items-center gap-2">
-                  <AgencerLogo
-                    size={28}
-                    bladeOpacities={BLADE_COLORS.map(() => 0.6)}
-                    ringScale={1}
-                    ringGlow={0}
-                  />
-                  <span className="font-serif text-lg text-text-headline">Agencer</span>
-                </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-                  aria-label="Close voice assistant"
-                >
-                  <X className="w-5 h-5 text-text-secondary" />
-                </button>
+              {/* Close button */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="absolute top-4 right-4 p-2 rounded-lg hover:bg-white/5 transition-colors z-10"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5 text-white/50" />
+              </button>
+
+              {/* Logo area - top third */}
+              <div className="flex-shrink-0 pt-10 pb-6 flex items-center justify-center">
+                <AgencerLogo
+                  size={100}
+                  bladeOpacities={bladeOpacities}
+                  ringBrightness={ringBrightness}
+                  ringGlow={ringGlow}
+                  idlePulse={idlePulse}
+                />
               </div>
 
-              {/* Conversation Area */}
-              <div className="flex-1 p-4 overflow-y-auto h-[calc(100%-140px)] md:h-[calc(500px-140px)]">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0">
-                    <AgencerLogo
-                      size={32}
-                      bladeOpacities={BLADE_COLORS.map(() => 0.5)}
-                      ringScale={1}
-                      ringGlow={0}
-                    />
-                  </div>
-                  <div className="glass-panel p-3 rounded-2xl rounded-tl-sm">
-                    <p className="text-text-primary text-sm">
-                      Hi. I&apos;m Agencer. What can I help you with?
-                    </p>
-                  </div>
-                </div>
+              {/* Text area - middle */}
+              <div className="flex-1 flex flex-col items-center justify-start px-6 overflow-y-auto">
+                <TextDisplay
+                  words={panelWords}
+                  currentWordIndex={panelWordIndex}
+                  showMicIcon={panelLineIndex === 2}
+                />
+                <MicPrompt isVisible={showMicPrompt} />
+
+                {isListening && !showMicPrompt && panelWordIndex < 0 && (
+                  <p className="text-center text-white/40 text-sm mt-4">
+                    Listening...
+                  </p>
+                )}
               </div>
 
-              {/* Input Area */}
-              <div className="p-4 border-t border-glass-border">
-                <form onSubmit={handleSubmit} className="flex gap-2">
+              {/* Input area - bottom */}
+              <div className="flex-shrink-0 p-4 border-t border-white/5">
+                <form onSubmit={handleSubmit} className="flex gap-3 items-center">
                   <input
                     type="text"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 bg-bg-tertiary border border-glass-border rounded-full px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-accent-wave/50 transition-colors"
+                    className="flex-1 bg-white/5 border border-white/10 rounded-full px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
                   />
                   <button
                     type="button"
-                    className="p-2.5 rounded-full bg-bg-tertiary border border-glass-border hover:border-accent-wave/50 transition-colors"
+                    onClick={() => {
+                      if (!micGranted) checkMicPermission();
+                      else setIsListening(!isListening);
+                    }}
+                    className={`p-3 rounded-full transition-all ${
+                      isListening
+                        ? "bg-accent-warm text-bg-primary animate-pulse"
+                        : "bg-white/10 text-white/60 hover:bg-white/15"
+                    }`}
                     aria-label="Voice input"
                   >
-                    <Mic className="w-5 h-5 text-text-secondary" />
+                    <Mic className="w-5 h-5" />
                   </button>
                   <button
                     type="submit"
-                    className="p-2.5 rounded-full bg-accent-warm hover:bg-accent-warm-hover transition-colors"
-                    aria-label="Send message"
+                    className="p-3 rounded-full bg-accent-warm hover:opacity-90 transition-opacity"
+                    aria-label="Send"
                   >
                     <Send className="w-5 h-5 text-bg-primary" />
                   </button>
                 </form>
-                <p className="text-xs text-text-secondary/60 text-center mt-2">
-                  Voice and text both work.
-                </p>
               </div>
             </motion.div>
           </>
