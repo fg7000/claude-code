@@ -1,67 +1,248 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { GlassPanel } from "@/components/ui/GlassPanel";
+import { Mic, Calendar, Clock, Phone, AlertCircle, PhoneCall, RotateCcw, Brain, GitBranch, Play, Search, CheckCircle, FileText, Send, Image, Share2, BarChart3, Folder } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const steps = [
+interface FlowNode {
+  label: string;
+  icon: React.ReactNode;
+  split?: boolean;
+  splitLabels?: string[];
+  reconverge?: boolean;
+}
+
+interface TaskFlow {
+  id: string;
+  color: string;
+  colorVar: string;
+  command: string;
+  nodes: FlowNode[];
+  tagline: string;
+}
+
+const flows: TaskFlow[] = [
   {
-    number: "1",
-    title: "You speak.",
-    body: "Natural language. No commands to memorize. No syntax. You talk the way you'd talk to a sharp colleague.",
-    example: "Find me flights to Tokyo next month, check my calendar for conflicts, and draft an out-of-office for the days I'll be gone.",
+    id: "relentless",
+    color: "#E8A838",
+    colorVar: "var(--logo-amber)",
+    command: "Remind me Monday to pay the invoices. If I haven't done it by 4pm Pacific, text me. If I don't reply within an hour, call me. This has to be done by 10pm. Don't let it go.",
+    nodes: [
+      { label: "Sets Monday reminder", icon: <Calendar className="w-4 h-4" /> },
+      { label: "4pm PT: checks status", icon: <Clock className="w-4 h-4" /> },
+      { label: "Sends SMS", icon: <Phone className="w-4 h-4" /> },
+      { label: "5pm: no reply detected", icon: <AlertCircle className="w-4 h-4" /> },
+      { label: "Places phone call", icon: <PhoneCall className="w-4 h-4" /> },
+      { label: "Repeats until confirmed", icon: <RotateCcw className="w-4 h-4" /> },
+    ],
+    tagline: "Six escalation steps. Three communication channels. Zero things you had to remember.",
   },
   {
-    number: "2",
-    title: "Agencer thinks.",
-    body: "The platform analyzes your request, breaks it into subtasks, and selects the best AI model for each one. Claude for research. GPT for drafting. Gemini for data. The right tool for the right job.",
+    id: "bakeoff",
+    color: "#C75577",
+    colorVar: "var(--logo-rose)",
+    command: "I want an animated button with a colorful sphere that breaks apart into smaller floating orbs on hover. Ask Claude Code and Gemini to evaluate whether Replit or Cursor would handle it better, then build it in both and show me the results.",
+    nodes: [
+      { label: "Interprets design intent", icon: <Brain className="w-4 h-4" /> },
+      { label: "Consults AI evaluators", icon: <GitBranch className="w-4 h-4" />, split: true, splitLabels: ["Claude Code → Replit", "Gemini → Cursor"] },
+      { label: "Routes to both platforms", icon: <Play className="w-4 h-4" />, reconverge: true },
+      { label: "Builds in parallel", icon: <GitBranch className="w-4 h-4" />, split: true, splitLabels: ["Builds in Replit", "Builds in Cursor"] },
+      { label: "Presents both results", icon: <CheckCircle className="w-4 h-4" />, reconverge: true },
+    ],
+    tagline: "Two AI evaluators. Two coding platforms. One animated button, built twice, so you pick the best.",
   },
   {
-    number: "3",
-    title: "Tools connect.",
-    body: "Agencer reaches into your connected services: Gmail, Google Calendar, Slack, Shopify, GitHub, whatever you use. If something isn't connected yet, it can discover and connect to it automatically. APIs, MCP servers, even browser automation for tools without APIs.",
+    id: "research",
+    color: "#8B5CF6",
+    colorVar: "var(--logo-violet)",
+    command: "Compare the cost of running open-source models on Kimi K2 versus Amazon Bedrock. Do the deep research with Opus 4.5. Then have Grok check for contradictions. If there are contradictions, text me. If there are none, build a presentation in Gamma and email it to the board.",
+    nodes: [
+      { label: "Opus 4.5: deep research", icon: <Search className="w-4 h-4" /> },
+      { label: "Pulls pricing data", icon: <BarChart3 className="w-4 h-4" /> },
+      { label: "Compiles analysis", icon: <FileText className="w-4 h-4" /> },
+      { label: "Grok: contradiction check", icon: <CheckCircle className="w-4 h-4" /> },
+      { label: "Conditional routing", icon: <GitBranch className="w-4 h-4" />, split: true, splitLabels: ["If issues → texts you", "If clean → continues"] },
+      { label: "Builds Gamma deck", icon: <FileText className="w-4 h-4" />, reconverge: true },
+      { label: "Emails board", icon: <Send className="w-4 h-4" /> },
+    ],
+    tagline: "Three models. Autonomous verification. Conditional logic. Board-ready, or you hear about it first.",
   },
   {
-    number: "4",
-    title: "Models coordinate.",
-    body: "This is the part nobody else does. Through AMP (Agent Messaging Protocol), your AI models actually talk to each other. They share context, hand off subtasks, and combine results. Not sequential. Orchestrated.",
-  },
-  {
-    number: "5",
-    title: "You get the result.",
-    body: "A synthesized, complete result. Not fragments from different tools you have to assemble. The finished thing. Reviewed, combined, delivered.",
+    id: "campaign",
+    color: "#3B82F6",
+    colorVar: "var(--logo-blue)",
+    command: "Grab our company logo, use Ideogram to generate a set of ad creatives, then post them across LinkedIn, Twitter, and Instagram over the next 24 hours. After 24 hours, pull the performance data and generate a report on which ones performed best.",
+    nodes: [
+      { label: "Retrieves company logo", icon: <Folder className="w-4 h-4" /> },
+      { label: "Ideogram: generates ads", icon: <Image className="w-4 h-4" /> },
+      { label: "Posts to platforms", icon: <Share2 className="w-4 h-4" />, split: true, splitLabels: ["LinkedIn", "Twitter", "Instagram"] },
+      { label: "Staggers over 24 hours", icon: <Clock className="w-4 h-4" />, reconverge: true },
+      { label: "Pulls analytics", icon: <BarChart3 className="w-4 h-4" /> },
+      { label: "Delivers report", icon: <FileText className="w-4 h-4" /> },
+    ],
+    tagline: "One logo in. Seven ad creatives out. Three platforms. Automated performance tracking.",
   },
 ];
 
+function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: number; index: number }) {
+  const flowProgress = Math.max(0, Math.min(1, (progress - index * 0.15) / 0.7));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="mb-16 last:mb-0"
+    >
+      {/* Voice command */}
+      <div className="mb-6">
+        <div
+          className="p-5 max-w-2xl rounded-2xl"
+          style={{
+            background: 'var(--glass-bg)',
+            border: `1px solid ${flow.color}30`,
+            backdropFilter: 'blur(var(--glass-blur))',
+            WebkitBackdropFilter: 'blur(var(--glass-blur))',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: `${flow.color}20`, border: `1px solid ${flow.color}40` }}
+            >
+              <Mic className="w-4 h-4" style={{ color: flow.color }} />
+            </div>
+            <p className="font-serif italic text-text-headline text-base leading-relaxed">
+              &ldquo;{flow.command}&rdquo;
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stream visualization */}
+      <div className="relative pl-4 md:pl-12 overflow-hidden">
+        {/* Main stream line */}
+        <div className="relative flex items-center gap-3 md:gap-6 py-4 overflow-x-auto scrollbar-hide">
+          {/* Origin point */}
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0 transition-all duration-500"
+            style={{
+              backgroundColor: flowProgress > 0 ? flow.color : `${flow.color}40`,
+              boxShadow: flowProgress > 0 ? `0 0 12px 4px ${flow.color}60` : 'none'
+            }}
+          />
+
+          {/* Connecting line */}
+          <div
+            className="h-0.5 w-8 md:w-12 flex-shrink-0 transition-all duration-500"
+            style={{
+              background: `linear-gradient(to right, ${flowProgress > 0 ? flow.color : flow.color + '40'}, ${flowProgress > 0.1 ? flow.color : flow.color + '40'})`
+            }}
+          />
+
+          {/* Nodes */}
+          {flow.nodes.map((node, nodeIndex) => {
+            const nodeProgress = flowProgress > (nodeIndex + 1) / (flow.nodes.length + 1);
+            const isActive = nodeProgress;
+
+            return (
+              <div key={nodeIndex} className="flex items-center gap-3 md:gap-6 flex-shrink-0">
+                {/* Node */}
+                <div
+                  className={`relative flex flex-col items-center transition-all duration-500 ${isActive ? 'scale-105' : 'scale-100'}`}
+                >
+                  {/* Split indicator */}
+                  {node.split && (
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 mb-2">
+                      {node.splitLabels?.map((label, i) => (
+                        <span
+                          key={i}
+                          className="text-[10px] font-mono whitespace-nowrap px-2 py-0.5 rounded"
+                          style={{
+                            backgroundColor: `${flow.color}15`,
+                            color: isActive ? flow.color : `${flow.color}60`,
+                            border: `1px solid ${flow.color}30`
+                          }}
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Node circle */}
+                  <div
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-500"
+                    style={{
+                      backgroundColor: isActive ? `${flow.color}20` : 'rgba(255,255,255,0.05)',
+                      border: `2px solid ${isActive ? flow.color : flow.color + '40'}`,
+                      boxShadow: isActive ? `0 0 20px 6px ${flow.color}40` : 'none'
+                    }}
+                  >
+                    <span style={{ color: isActive ? flow.color : `${flow.color}60` }}>
+                      {node.icon}
+                    </span>
+                  </div>
+
+                  {/* Node label */}
+                  <span
+                    className="mt-2 text-[11px] md:text-xs font-mono text-center max-w-[80px] md:max-w-[100px] transition-all duration-500"
+                    style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                  >
+                    {node.label}
+                  </span>
+                </div>
+
+                {/* Connecting line to next node */}
+                {nodeIndex < flow.nodes.length - 1 && (
+                  <div
+                    className="h-0.5 w-8 md:w-12 flex-shrink-0 transition-all duration-500"
+                    style={{
+                      background: nodeProgress ? flow.color : `${flow.color}40`
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tagline */}
+      <p
+        className="mt-4 pl-4 md:pl-12 font-mono text-sm transition-all duration-500"
+        style={{ color: flowProgress > 0.8 ? flow.color : 'var(--text-secondary)' }}
+      >
+        {flow.tagline}
+      </p>
+    </motion.div>
+  );
+}
+
 export function HowItWorks() {
   const sectionRef = useRef<HTMLElement>(null);
-  const lineRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (!sectionRef.current || !lineRef.current || prefersReducedMotion) return;
+    if (!sectionRef.current || prefersReducedMotion) return;
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        lineRef.current,
-        { scaleY: 0 },
-        {
-          scaleY: 1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 60%",
-            end: "bottom 60%",
-            scrub: 1,
-          },
-        }
-      );
+      ScrollTrigger.create({
+        trigger: sectionRef.current,
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1,
+        onUpdate: (self) => {
+          setScrollProgress(self.progress);
+        },
+      });
     }, sectionRef);
 
     return () => ctx.revert();
@@ -71,81 +252,61 @@ export function HowItWorks() {
     <section
       ref={sectionRef}
       id="how-it-works"
-      className="relative py-32 bg-bg-primary overflow-hidden"
+      className="relative min-h-[300vh] bg-bg-primary"
     >
-      <div className="max-w-[900px] mx-auto px-6">
-        <div className="text-center mb-20">
-          <SectionLabel>How It Works</SectionLabel>
-          <h2
-            className="font-serif font-medium text-text-headline"
-            style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+      <div className="sticky top-0 min-h-screen py-20 md:py-32 overflow-hidden">
+        {/* Background wave glow */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-30"
+          style={{
+            background: `radial-gradient(ellipse at 30% 50%, var(--accent-wave-glow) 0%, transparent 50%)`
+          }}
+        />
+
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-12 md:mb-16"
           >
-            Five seconds from thought to action.
-          </h2>
-        </div>
+            <SectionLabel>How It Works</SectionLabel>
+            <h2
+              className="font-serif font-medium text-text-headline mb-4"
+              style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+            >
+              Five seconds from thought to action.
+            </h2>
+            <p className="font-sans text-text-secondary max-w-2xl mx-auto" style={{ fontSize: "clamp(1rem, 1.2vw, 1.25rem)" }}>
+              One voice command. Multiple models. Dozens of tools. Here&apos;s what that looks like.
+            </p>
+          </motion.div>
 
-        {/* Timeline */}
-        <div className="relative">
-          {/* Center line - Desktop only */}
-          <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2">
+          {/* Origin point - voice icon */}
+          <div className="flex items-center gap-4 mb-8 pl-4 md:pl-12">
             <div
-              ref={lineRef}
-              className="h-full w-full origin-top"
-              style={{ backgroundColor: "rgba(212, 168, 83, 0.2)" }}
-            />
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, var(--accent-wave) 0%, var(--logo-violet) 100%)',
+                boxShadow: '0 0 30px 10px rgba(74, 123, 247, 0.3)'
+              }}
+            >
+              <Mic className="w-6 h-6 text-white" />
+            </div>
+            <span className="font-mono text-sm text-text-secondary">Your voice command splits into parallel task streams</span>
           </div>
 
-          {/* Left line - Mobile only */}
-          <div className="md:hidden absolute left-4 top-0 bottom-0 w-px">
-            <div
-              className="h-full w-full origin-top"
-              style={{ backgroundColor: "rgba(212, 168, 83, 0.2)" }}
-            />
-          </div>
-
-          {/* Steps */}
-          <div className="space-y-16 md:space-y-24">
-            {steps.map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className={`relative flex items-start gap-6 md:gap-0 ${
-                  i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-                }`}
-              >
-                {/* Number circle - Mobile */}
-                <div className="md:hidden flex-shrink-0 w-8 h-8 rounded-full border border-accent-gold bg-bg-primary flex items-center justify-center z-10">
-                  <span className="font-mono text-sm text-accent-gold">{step.number}</span>
-                </div>
-
-                {/* Content */}
-                <div className={`flex-1 md:w-[calc(50%-40px)] ${i % 2 === 0 ? "md:pr-16 md:text-right" : "md:pl-16"}`}>
-                  <h3 className="font-sans font-semibold text-text-headline text-xl mb-3">
-                    {step.title}
-                  </h3>
-                  <p className="font-sans text-text-secondary leading-relaxed mb-4">
-                    {step.body}
-                  </p>
-                  {step.example && (
-                    <GlassPanel className="p-4 inline-block text-left">
-                      <p className="font-mono text-sm text-text-secondary/80">
-                        {step.example}
-                      </p>
-                    </GlassPanel>
-                  )}
-                </div>
-
-                {/* Number circle - Desktop */}
-                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-10 h-10 rounded-full border border-accent-gold bg-bg-primary items-center justify-center z-10">
-                  <span className="font-mono text-sm text-accent-gold">{step.number}</span>
-                </div>
-
-                {/* Spacer for the other side */}
-                <div className="hidden md:block md:w-[calc(50%-40px)]" />
-              </motion.div>
+          {/* Task flows */}
+          <div className="space-y-8">
+            {flows.map((flow, index) => (
+              <FlowStream
+                key={flow.id}
+                flow={flow}
+                progress={scrollProgress}
+                index={index}
+              />
             ))}
           </div>
         </div>
