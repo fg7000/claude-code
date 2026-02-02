@@ -7,32 +7,32 @@ import { GlassPanel } from "@/components/ui/GlassPanel";
 
 const rows = [
   {
-    items: ["Claude", "GPT-4o", "Gemini", "Grok", "DeepSeek", "Llama", "Mistral", "Qwen", "Cohere"],
+    items: ["Claude", "GPT-4o", "Gemini", "Grok", "DeepSeek", "Llama", "Mistral", "Qwen", "Cohere", "Claude", "GPT-4o", "Gemini", "Grok", "DeepSeek"],
     direction: "left" as const,
     speed: "normal" as const,
   },
   {
-    items: ["Gmail", "Google Docs", "Slack", "Notion", "Linear", "Asana", "Trello", "Jira"],
+    items: ["Gmail", "Google Docs", "Slack", "Notion", "Linear", "Asana", "Trello", "Jira", "Gmail", "Google Docs", "Slack", "Notion", "Linear"],
     direction: "right" as const,
     speed: "slow" as const,
   },
   {
-    items: ["Suno", "ElevenLabs", "Runway", "Midjourney", "DALL-E", "Figma", "Canva"],
+    items: ["Suno", "ElevenLabs", "Runway", "Midjourney", "DALL-E", "Figma", "Canva", "Suno", "ElevenLabs", "Runway", "Midjourney", "DALL-E", "Figma", "Canva"],
     direction: "left" as const,
     speed: "slow" as const,
   },
   {
-    items: ["GitHub", "Replit", "Claude Code", "Vercel", "AWS", "Docker", "VS Code"],
+    items: ["GitHub", "Replit", "Claude Code", "Vercel", "AWS", "Docker", "VS Code", "GitHub", "Replit", "Claude Code", "Vercel", "AWS", "Docker"],
     direction: "right" as const,
     speed: "normal" as const,
   },
   {
-    items: ["LinkedIn", "X/Twitter", "Instagram", "TikTok", "YouTube", "Reddit", "Bluesky", "Threads"],
+    items: ["LinkedIn", "X/Twitter", "Instagram", "TikTok", "YouTube", "Reddit", "Bluesky", "Threads", "LinkedIn", "X/Twitter", "Instagram", "TikTok"],
     direction: "left" as const,
     speed: "normal" as const,
   },
   {
-    items: ["Shopify", "Stripe", "HubSpot", "Salesforce", "QuickBooks", "Airtable"],
+    items: ["Shopify", "Stripe", "HubSpot", "Salesforce", "QuickBooks", "Airtable", "Shopify", "Stripe", "HubSpot", "Salesforce", "QuickBooks", "Airtable"],
     direction: "right" as const,
     speed: "slow" as const,
   },
@@ -42,10 +42,10 @@ export function ConnectsToAnything() {
   return (
     <section
       id="connects-to-anything"
-      className="relative py-32 min-h-[150vh] overflow-hidden bg-bg-primary"
+      className="relative py-16 min-h-screen overflow-hidden bg-bg-primary"
     >
-      {/* Marquee rows */}
-      <div className="absolute inset-0 flex flex-col justify-center gap-4 opacity-60">
+      {/* Marquee rows - full width */}
+      <div className="absolute inset-0 flex flex-col justify-center gap-4 opacity-60 w-screen left-1/2 -translate-x-1/2">
         {rows.map((row, i) => (
           <LogoMarquee
             key={i}
@@ -64,9 +64,8 @@ export function ConnectsToAnything() {
         }}
       />
 
-      {/* Content overlay - sticky centered */}
-      <div className="relative z-10 min-h-[150vh] px-6">
-        <div className="sticky top-1/2 -translate-y-1/2 flex items-center justify-center py-16">
+      {/* Content overlay - centered */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-6">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -89,7 +88,6 @@ export function ConnectsToAnything() {
               </p>
             </GlassPanel>
           </motion.div>
-        </div>
       </div>
     </section>
   );
