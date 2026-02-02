@@ -267,25 +267,28 @@ export function Network() {
       className="relative min-h-[200vh] bg-[#0a0a0a]"
     >
       <div className="sticky top-0 min-h-screen flex flex-col">
-        {/* Globe visualization - 50vh, centered */}
-        <div className="relative h-[50vh] w-full flex items-center justify-center">
+        {/* Section label at top */}
+        <div className="pt-20 pb-4 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <SectionLabel>The Agencer Network</SectionLabel>
+          </motion.div>
+        </div>
+
+        {/* Globe visualization - centered */}
+        <div className="relative h-[45vh] w-full flex items-center justify-center">
           <div className="w-full h-full max-w-[800px] mx-auto">
             <NetworkGlobe progress={scrollProgress} />
           </div>
         </div>
 
-        {/* Text content */}
-        <div className="flex-1 px-6 py-12">
+        {/* Text content below globe */}
+        <div className="flex-1 px-6 py-8">
           <div className="max-w-[900px] mx-auto text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <SectionLabel>The Agents Are Networked</SectionLabel>
-            </motion.div>
-
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
