@@ -50,10 +50,13 @@ export function CostAdvantage() {
           className="max-w-3xl mx-auto text-center mb-12"
         >
           <p className="font-sans text-text-secondary leading-relaxed mb-6" style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}>
-            Most people pay for three or four AI subscriptions and still do all the connecting themselves. Claude for writing. ChatGPT for conversation. Gemini for search. Midjourney for images. That adds up fast, and you&apos;re still the glue holding it all together.
+            There was a time when companies ran their own servers. Then managed infrastructure happened. Right now, people are running AI agents on hardware in their closet, managing their own API keys, and hoping nothing breaks.
+          </p>
+          <p className="font-sans text-text-secondary leading-relaxed mb-6" style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}>
+            We&apos;ve all seen how that goes. Surprise bills that hit four figures in a week. Credentials in plaintext. Security researchers finding exposed instances on public scans.
           </p>
           <p className="font-sans text-text-secondary leading-relaxed" style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}>
-            Agencer gives you access to every model through one interface, orchestrates them intelligently, and handles all the tool connections. The result is better output at a fraction of the combined cost.
+            Agencer is managed AI orchestration. You see what every action costs before it runs. Every credential encrypted. Every model sandboxed. The power without the exposure.
           </p>
         </motion.div>
 
