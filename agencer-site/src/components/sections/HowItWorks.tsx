@@ -134,9 +134,9 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
       </div>
 
       {/* Stream visualization - more spacing between nodes */}
-      <div className="relative pl-4 md:pl-12 overflow-hidden">
+      <div className="relative pl-4 md:pl-12">
         {/* Main stream line */}
-        <div className="relative flex items-center gap-6 md:gap-10 py-8 overflow-x-auto scrollbar-hide">
+        <div className="relative flex items-center gap-6 md:gap-10 pt-20 pb-8 overflow-x-auto scrollbar-hide">
           {/* Origin point */}
           <div
             className="w-3 h-3 rounded-full flex-shrink-0 transition-all duration-500"
