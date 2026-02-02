@@ -11,22 +11,37 @@ const DEMO_LINES = [
   "Try me. Unmute your mic and say hello.",
 ];
 
+// Petal colors matching the logo spiral (12 petals going clockwise from top)
+const PETAL_COLORS = [
+  "#1e3a5f", // dark blue (top)
+  "#2563eb", // blue
+  "#0891b2", // cyan/teal
+  "#059669", // green
+  "#65a30d", // lime
+  "#eab308", // yellow
+  "#f97316", // orange
+  "#ef4444", // red
+  "#ec4899", // pink
+  "#a855f7", // purple
+  "#7c3aed", // violet
+  "#4f46e5", // indigo
+];
+
 interface AgencerLogoProps {
   size?: number;
-  brightness?: number;
-  glow?: number;
+  petalGlows: number[]; // Array of 12 glow intensities (0-1)
   pulseIntensity?: number;
 }
 
-// Agencer Logo using the actual PNG with CSS filter animations
+// Agencer Logo with individually addressable petal overlays
 function AgencerLogo({
   size = 40,
-  brightness = 1,
-  glow = 0,
+  petalGlows,
   pulseIntensity = 0,
 }: AgencerLogoProps) {
   const ringSize = size + 12;
   const ringRadius = ringSize / 2;
+  const centerOffset = 6; // Offset to center logo within ring
 
   return (
     <div className="relative" style={{ width: ringSize, height: ringSize }}>
@@ -54,12 +69,14 @@ function AgencerLogo({
         />
       </svg>
 
-      {/* Logo image with filter animations */}
+      {/* Base logo image */}
       <div
-        className="absolute inset-0 flex items-center justify-center"
+        className="absolute flex items-center justify-center"
         style={{
-          filter: `brightness(${brightness}) saturate(${1 + glow * 0.3}) drop-shadow(0 0 ${glow * 20}px rgba(255, 200, 100, ${glow * 0.5}))`,
-          transition: "filter 0.15s ease-out",
+          top: centerOffset,
+          left: centerOffset,
+          width: size,
+          height: size,
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -70,6 +87,43 @@ function AgencerLogo({
           height={size}
           style={{ objectFit: "contain" }}
         />
+      </div>
+
+      {/* Petal glow overlays - positioned to match each petal segment */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          top: centerOffset,
+          left: centerOffset,
+          width: size,
+          height: size,
+        }}
+      >
+        {PETAL_COLORS.map((color, index) => {
+          const glowIntensity = petalGlows[index] || 0;
+          if (glowIntensity < 0.1) return null;
+
+          // Each petal occupies 30 degrees (360/12), starting from top (-90deg)
+          const startAngle = -90 + index * 30;
+          const endAngle = startAngle + 30;
+
+          // Create a pie slice using conic-gradient
+          const gradientAngle = `from ${startAngle}deg`;
+
+          return (
+            <div
+              key={index}
+              className="absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(${gradientAngle}, ${color} 0deg, ${color} 30deg, transparent 30deg)`,
+                opacity: glowIntensity * 0.7,
+                filter: `blur(${glowIntensity * 3}px) drop-shadow(0 0 ${glowIntensity * 15}px ${color})`,
+                mixBlendMode: "screen",
+                transition: "opacity 0.1s ease-out",
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -219,10 +273,10 @@ export function VoiceWidget() {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastScrollY = useRef(0);
 
-  // Animation states
-  const [brightness, setBrightness] = useState(1);
-  const [glow, setGlow] = useState(0);
+  // Animation states - individual petal glows (12 petals)
+  const [petalGlows, setPetalGlows] = useState<number[]>(new Array(12).fill(0));
   const [pulseIntensity, setPulseIntensity] = useState(0);
+  const lastFlashedPetal = useRef<number>(-1);
 
   // Demo state
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
@@ -245,28 +299,62 @@ export function VoiceWidget() {
   const panelDemoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ambientIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Flash the logo (brightness pulse for speaking)
-  const flashLogo = useCallback(() => {
-    setBrightness(1.4);
-    setGlow(0.8);
+  // Flash random petals (2-4 petals at once for speaking effect)
+  const flashPetals = useCallback(() => {
+    // Pick 2-4 random petals that aren't the same as last time
+    const numPetals = 2 + Math.floor(Math.random() * 3); // 2-4 petals
+    const petalsToFlash: number[] = [];
+
+    while (petalsToFlash.length < numPetals) {
+      const petal = Math.floor(Math.random() * 12);
+      if (!petalsToFlash.includes(petal) && petal !== lastFlashedPetal.current) {
+        petalsToFlash.push(petal);
+      }
+    }
+
+    lastFlashedPetal.current = petalsToFlash[0];
+
+    // Set the petals to full glow
+    setPetalGlows(prev => {
+      const newGlows = [...prev];
+      petalsToFlash.forEach(p => { newGlows[p] = 1; });
+      return newGlows;
+    });
 
     // Fade back over 300ms
-    setTimeout(() => setBrightness(1.2), 100);
     setTimeout(() => {
-      setBrightness(1);
-      setGlow(0);
+      setPetalGlows(prev => {
+        const newGlows = [...prev];
+        petalsToFlash.forEach(p => { newGlows[p] = 0.5; });
+        return newGlows;
+      });
+    }, 100);
+
+    setTimeout(() => {
+      setPetalGlows(prev => {
+        const newGlows = [...prev];
+        petalsToFlash.forEach(p => { newGlows[p] = 0; });
+        return newGlows;
+      });
     }, 300);
   }, []);
 
-  // Start ambient twinkle (gentle periodic pulse)
+  // Start ambient twinkle (random single petal periodically)
   const startAmbientTwinkle = useCallback(() => {
     if (ambientIntervalRef.current) clearInterval(ambientIntervalRef.current);
     ambientIntervalRef.current = setInterval(() => {
-      setBrightness(1.15);
-      setGlow(0.3);
+      const petal = Math.floor(Math.random() * 12);
+      setPetalGlows(prev => {
+        const newGlows = [...prev];
+        newGlows[petal] = 0.6;
+        return newGlows;
+      });
       setTimeout(() => {
-        setBrightness(1);
-        setGlow(0);
+        setPetalGlows(prev => {
+          const newGlows = [...prev];
+          newGlows[petal] = 0;
+          return newGlows;
+        });
       }, 400);
     }, 2000);
   }, []);
@@ -294,7 +382,7 @@ export function VoiceWidget() {
       }
 
       setCurrentWordIndex(wordIdx);
-      flashLogo();
+      flashPetals();
 
       const word = words[wordIdx];
       let delay = 250 + Math.random() * 100;
@@ -307,7 +395,7 @@ export function VoiceWidget() {
     };
 
     demoTimeoutRef.current = setTimeout(typeNextWord, 300);
-  }, [flashLogo]);
+  }, [flashPetals]);
 
   // Run demo for collapsed widget
   const runDemo = useCallback(() => {
@@ -363,7 +451,7 @@ export function VoiceWidget() {
       }
 
       setPanelWordIndex(wordIdx);
-      flashLogo();
+      flashPetals();
 
       const word = words[wordIdx];
       let delay = 250 + Math.random() * 100;
@@ -376,7 +464,7 @@ export function VoiceWidget() {
     };
 
     panelDemoTimeoutRef.current = setTimeout(typeNextWord, 300);
-  }, [flashLogo]);
+  }, [flashPetals]);
 
   // Run demo in expanded panel
   const runPanelDemo = useCallback(() => {
@@ -544,8 +632,7 @@ export function VoiceWidget() {
               <div className="relative flex items-center justify-center rounded-full bg-bg-primary/80 border border-glass-border p-2">
                 <AgencerLogo
                   size={36}
-                  brightness={brightness}
-                  glow={glow}
+                  petalGlows={petalGlows}
                   pulseIntensity={pulseIntensity}
                 />
               </div>
@@ -597,8 +684,7 @@ export function VoiceWidget() {
               <div className="flex-shrink-0 pt-12 pb-8 flex items-center justify-center">
                 <AgencerLogo
                   size={100}
-                  brightness={brightness}
-                  glow={glow}
+                  petalGlows={petalGlows}
                   pulseIntensity={pulseIntensity}
                 />
               </div>
