@@ -90,9 +90,9 @@ const flows: TaskFlow[] = [
 ];
 
 function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: number; index: number }) {
-  // Adjusted timing: each flow gets more scroll range, starts earlier
-  const flowStart = index * 0.2;
-  const flowProgress = Math.max(0, Math.min(1, (progress - flowStart) / 0.25));
+  // Slower timing: each flow takes longer to complete, guiding the eye left to right
+  const flowStart = index * 0.22;
+  const flowProgress = Math.max(0, Math.min(1, (progress - flowStart) / 0.4));
 
   return (
     <motion.div
