@@ -2,6 +2,7 @@ import { Hero } from "@/components/sections/Hero";
 import { TheProblem } from "@/components/sections/TheProblem";
 import { TheSolution } from "@/components/sections/TheSolution";
 import { OrchestraVideo } from "@/components/sections/OrchestraVideo";
+import { HowItWorks } from "@/components/sections/HowItWorks";
 import { CostAdvantage } from "@/components/sections/CostAdvantage";
 import { ConnectsToAnything } from "@/components/sections/ConnectsToAnything";
 import { TotalRecall } from "@/components/sections/TotalRecall";
@@ -18,6 +19,7 @@ export default function Home() {
       <TheProblem />
       <TheSolution />
       <OrchestraVideo />
+      <HowItWorks />
       <CostAdvantage />
       <ConnectsToAnything />
       <TotalRecall />
