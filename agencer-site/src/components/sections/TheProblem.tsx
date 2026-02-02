@@ -73,7 +73,7 @@ export function TheProblem() {
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.6, delay: i * 0.1 }}
                 className="font-sans text-text-secondary leading-relaxed"
-                style={{ fontSize: "clamp(1rem, 1.2vw, 1.25rem)" }}
+                style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}
               >
                 {line}
               </motion.p>

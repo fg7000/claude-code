@@ -91,8 +91,8 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
-          className="font-serif font-medium text-text-headline leading-tight mb-4"
-          style={{ fontSize: "clamp(3rem, 8vw, 7rem)" }}
+          className="font-serif font-medium text-text-headline leading-tight mb-4 whitespace-nowrap"
+          style={{ fontSize: "clamp(2rem, 6vw, 5.5rem)" }}
         >
           Every AI. Every tool. One voice.
         </motion.h1>

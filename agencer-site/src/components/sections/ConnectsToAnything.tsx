@@ -64,30 +64,32 @@ export function ConnectsToAnything() {
         }}
       />
 
-      {/* Content overlay */}
-      <div className="relative z-10 min-h-[150vh] flex items-center justify-center px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.8 }}
-        >
-          <GlassPanel className="max-w-2xl p-8 md:p-12 text-center">
-            <SectionLabel className="mb-6">Infinite Connections</SectionLabel>
-            <h2
-              className="font-serif font-medium text-text-headline mb-6"
-              style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
-            >
-              If it exists, Agencer connects to it.
-            </h2>
-            <p className="font-sans text-text-secondary leading-relaxed mb-6">
-              APIs. MCP servers. Browser automation. Whatever the interface, Agencer finds it, reads the documentation, and connects, without you configuring anything.
-            </p>
-            <p className="font-mono text-xs text-accent-gold">
-              New MCP server published? Agencer can discover and integrate it the same day.
-            </p>
-          </GlassPanel>
-        </motion.div>
+      {/* Content overlay - sticky centered */}
+      <div className="relative z-10 min-h-[150vh] px-6">
+        <div className="sticky top-1/2 -translate-y-1/2 flex items-center justify-center py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8 }}
+          >
+            <GlassPanel className="max-w-2xl p-8 md:p-12 text-center">
+              <SectionLabel className="mb-6">Infinite Connections</SectionLabel>
+              <h2
+                className="font-serif font-medium text-text-headline mb-6"
+                style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)" }}
+              >
+                If it exists, Agencer connects to it.
+              </h2>
+              <p className="font-sans text-text-secondary leading-relaxed mb-6" style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}>
+                APIs. MCP servers. Browser automation. Whatever the interface, Agencer finds it, reads the documentation, and connects, without you configuring anything.
+              </p>
+              <p className="font-mono text-sm text-accent-warm">
+                New MCP server published? Agencer can discover and integrate it the same day.
+              </p>
+            </GlassPanel>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

@@ -93,8 +93,8 @@ export function TheSolution() {
                   {card.body}
                 </p>
 
-                {/* Footer */}
-                <p className="font-mono text-xs text-accent-gold">
+                {/* Footer tagline - prominent */}
+                <p className="font-mono text-sm md:text-base text-accent-warm font-medium mt-auto pt-4 border-t border-white/10">
                   {card.footer}
                 </p>
               </GlassPanel>

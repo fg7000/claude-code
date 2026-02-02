@@ -34,8 +34,8 @@ export function CostAdvantage() {
         >
           <SectionLabel className="mb-4">The Math</SectionLabel>
           <h2
-            className="font-serif font-medium text-text-headline mb-6"
-            style={{ fontSize: "clamp(2rem, 5vw, 4rem)" }}
+            className="font-serif font-medium text-text-headline mb-6 whitespace-nowrap"
+            style={{ fontSize: "clamp(1.5rem, 4vw, 3.5rem)" }}
           >
             More capable. Less expensive. Not a typo.
           </h2>
@@ -49,10 +49,10 @@ export function CostAdvantage() {
           transition={{ duration: 0.8, delay: 0.1 }}
           className="max-w-3xl mx-auto text-center mb-12"
         >
-          <p className="font-sans text-text-secondary leading-relaxed mb-6">
+          <p className="font-sans text-text-secondary leading-relaxed mb-6" style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}>
             Most people pay for three or four AI subscriptions and still do all the connecting themselves. Claude for writing. ChatGPT for conversation. Gemini for search. Midjourney for images. That adds up fast, and you&apos;re still the glue holding it all together.
           </p>
-          <p className="font-sans text-text-secondary leading-relaxed">
+          <p className="font-sans text-text-secondary leading-relaxed" style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}>
             Agencer gives you access to every model through one interface, orchestrates them intelligently, and handles all the tool connections. The result is better output at a fraction of the combined cost.
           </p>
         </motion.div>

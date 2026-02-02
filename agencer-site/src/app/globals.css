@@ -44,6 +44,7 @@
   --color-accent-wave: var(--accent-wave);
   --color-accent-warm: var(--accent-warm);
   --color-accent-warm-hover: var(--accent-warm-hover);
+  --color-accent-gold: var(--accent-warm);
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
   --color-logo-amber: var(--logo-amber);
@@ -131,7 +132,7 @@ html.lenis, html.lenis body {
 /* Section label */
 .section-label {
   font-family: "JetBrains Mono", monospace;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: var(--accent-warm);

@@ -61,8 +61,8 @@ export function Security() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: 0.1 * i }}
-              className="font-sans text-text-secondary leading-relaxed"
-              style={{ fontSize: "clamp(1rem, 1.2vw, 1.25rem)" }}
+              className="font-sans text-text-secondary leading-relaxed text-center"
+              style={{ fontSize: "clamp(1.1rem, 1.4vw, 1.35rem)" }}
             >
               {statement}
             </motion.p>
