@@ -8,16 +8,8 @@ interface VoiceVisualizationProps {
   className?: string;
 }
 
-// Logo spectrum colors
-const spectrumColors = [
-  { r: 232, g: 168, b: 56 },   // amber
-  { r: 212, g: 114, b: 74 },   // copper
-  { r: 199, g: 85, b: 119 },   // rose
-  { r: 139, g: 92, b: 246 },   // violet
-  { r: 99, g: 102, b: 241 },   // indigo
-  { r: 59, g: 130, b: 246 },   // blue
-  { r: 20, g: 184, b: 166 },   // teal
-];
+// Gold color for breathing dots (original style)
+const goldColor = { r: 212, g: 168, b: 83 };
 
 export function VoiceVisualization({ size = 300, className = "" }: VoiceVisualizationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -44,26 +36,22 @@ export function VoiceVisualization({ size = 300, className = "" }: VoiceVisualiz
 
     interface Dot {
       angle: number;
-      orbitOffset: number;
+      baseRadius: number;
       amplitude: number;
       speed: number;
       phase: number;
-      colorIndex: number;
-      size: number;
     }
 
     const dots: Dot[] = [];
 
-    // Initialize orbiting dots
+    // Initialize orbiting dots (original gold style)
     for (let i = 0; i < numDots; i++) {
       dots.push({
-        angle: (i / numDots) * Math.PI * 2 + Math.random() * 0.3,
-        orbitOffset: (Math.random() - 0.5) * 30,
-        amplitude: 8 + Math.random() * 15,
-        speed: 0.3 + Math.random() * 0.8,
+        angle: (i / numDots) * Math.PI * 2,
+        baseRadius: orbitRadius,
+        amplitude: 10 + Math.random() * 20,
+        speed: 0.5 + Math.random() * 1.5,
         phase: Math.random() * Math.PI * 2,
-        colorIndex: Math.floor(Math.random() * spectrumColors.length),
-        size: 2 + Math.random() * 4,
       });
     }
 
@@ -72,7 +60,6 @@ export function VoiceVisualization({ size = 300, className = "" }: VoiceVisualiz
       angle: number;
       radius: number;
       speed: number;
-      colorIndex: number;
       size: number;
       opacity: number;
     }
@@ -113,20 +100,19 @@ export function VoiceVisualization({ size = 300, className = "" }: VoiceVisualiz
       ctx.arc(centerX, centerY, waveRadius + 10, wave2Start, wave2End);
       ctx.stroke();
 
-      // Spawn new pulse particles occasionally
-      if (!prefersReducedMotion && time - lastParticleTime > 0.15 && Math.random() > 0.7) {
+      // Spawn new pulse particles occasionally (gold color)
+      if (!prefersReducedMotion && time - lastParticleTime > 0.2 && Math.random() > 0.6) {
         particles.push({
           angle: Math.random() * Math.PI * 2,
           radius: size * 0.28,
           speed: 1 + Math.random() * 2,
-          colorIndex: Math.floor(Math.random() * spectrumColors.length),
           size: 2 + Math.random() * 3,
           opacity: 0.8,
         });
         lastParticleTime = time;
       }
 
-      // Update and draw pulse particles
+      // Update and draw pulse particles (gold)
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.radius += p.speed;
@@ -139,53 +125,37 @@ export function VoiceVisualization({ size = 300, className = "" }: VoiceVisualiz
 
         const x = centerX + Math.cos(p.angle) * p.radius;
         const y = centerY + Math.sin(p.angle) * p.radius;
-        const color = spectrumColors[p.colorIndex];
 
         ctx.beginPath();
         ctx.arc(x, y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${p.opacity})`;
-        ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, ${p.opacity * 0.5})`;
+        ctx.fillStyle = `rgba(${goldColor.r}, ${goldColor.g}, ${goldColor.b}, ${p.opacity})`;
+        ctx.shadowColor = `rgba(${goldColor.r}, ${goldColor.g}, ${goldColor.b}, ${p.opacity * 0.5})`;
         ctx.shadowBlur = 8;
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      // Draw orbiting dots with breathing animation
+      // Draw orbiting dots with breathing animation (original gold style)
       dots.forEach((dot) => {
         const pulse = prefersReducedMotion
           ? 0
           : Math.sin(time * dot.speed + dot.phase) * dot.amplitude;
 
         // Radial position pulses in and out
-        const currentRadius = orbitRadius + dot.orbitOffset + pulse;
+        const currentRadius = dot.baseRadius + pulse;
         const x = centerX + Math.cos(dot.angle + rotation) * currentRadius;
         const y = centerY + Math.sin(dot.angle + rotation) * currentRadius;
 
-        const color = spectrumColors[dot.colorIndex];
+        // BREATHING EFFECT: dot size and opacity change with pulse
+        const dotSize = 3 + (pulse / dot.amplitude) * 2;
+        const opacity = 0.6 + (pulse / dot.amplitude) * 0.4;
 
-        // BREATHING EFFECT: dot size grows and shrinks with the pulse
-        const normalizedPulse = pulse / dot.amplitude; // -1 to 1
-        const breathingSize = dot.size + normalizedPulse * 2; // size varies by ±2px
-        const breathingOpacity = 0.6 + normalizedPulse * 0.4; // opacity varies 0.2 to 1.0
-
-        // Outer glow (also breathes)
+        // Draw the dot with glow
         ctx.beginPath();
-        ctx.arc(x, y, breathingSize * 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${breathingOpacity * 0.25})`;
-        ctx.fill();
-
-        // Middle glow
-        ctx.beginPath();
-        ctx.arc(x, y, breathingSize * 1.8, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${breathingOpacity * 0.4})`;
-        ctx.fill();
-
-        // Core dot (breathing size)
-        ctx.beginPath();
-        ctx.arc(x, y, breathingSize, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${breathingOpacity})`;
-        ctx.shadowColor = `rgba(${color.r}, ${color.g}, ${color.b}, 0.8)`;
-        ctx.shadowBlur = 10;
+        ctx.arc(x, y, dotSize, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${goldColor.r}, ${goldColor.g}, ${goldColor.b}, ${opacity})`;
+        ctx.shadowColor = `rgba(${goldColor.r}, ${goldColor.g}, ${goldColor.b}, 0.6)`;
+        ctx.shadowBlur = 8;
         ctx.fill();
         ctx.shadowBlur = 0;
       });
