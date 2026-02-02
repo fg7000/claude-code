@@ -58,7 +58,7 @@ export function Navbar() {
               className="w-8 h-8"
             />
             <span className="font-serif text-xl text-text-headline tracking-wide">
-              agencer
+              Agencer
             </span>
           </a>
 

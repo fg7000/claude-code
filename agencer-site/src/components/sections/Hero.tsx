@@ -105,7 +105,7 @@ export function Hero() {
           className="font-sans text-text-secondary max-w-xl leading-relaxed mb-8"
           style={{ fontSize: "clamp(1rem, 1.2vw, 1.25rem)" }}
         >
-          Agencer picks the best AI for each task, connects to your tools, and gets it done. You just talk.
+          Tell it what you need. It figures out the rest.
         </motion.p>
 
         {/* CTA */}

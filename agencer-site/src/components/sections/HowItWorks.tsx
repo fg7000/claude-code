@@ -318,20 +318,6 @@ export function HowItWorks() {
             </p>
           </motion.div>
 
-          {/* Origin point - voice icon */}
-          <div className="flex items-center gap-4 mb-8 pl-4 md:pl-12">
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, var(--accent-wave) 0%, var(--logo-violet) 100%)',
-                boxShadow: '0 0 30px 10px rgba(74, 123, 247, 0.3)'
-              }}
-            >
-              <Mic className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-mono text-sm text-text-secondary">Your voice command splits into parallel task streams</span>
-          </div>
-
           {/* Task flows - more vertical spacing between flows */}
           <div className="space-y-16">
             {flows.map((flow, index) => (
