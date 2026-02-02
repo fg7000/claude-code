@@ -86,6 +86,8 @@ const flows: TaskFlow[] = [
 
 function FlowStream({ flow, index }: { flow: TaskFlow; index: number }) {
   const flowRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [activeNodeIndex, setActiveNodeIndex] = useState(-1); // -1 means not started, 0+ means which node is active
   const hasAnimated = useRef(false);
@@ -136,6 +138,27 @@ function FlowStream({ flow, index }: { flow: TaskFlow; index: number }) {
     return () => clearInterval(interval);
   }, [isVisible, flow.nodes.length]);
 
+  // Auto-scroll to follow the active node
+  useEffect(() => {
+    if (activeNodeIndex <= 0) return;
+
+    const container = scrollContainerRef.current;
+    const nodeEl = nodeRefs.current[activeNodeIndex - 1]; // -1 because activeNodeIndex starts at 1 for first node
+
+    if (container && nodeEl) {
+      const containerRect = container.getBoundingClientRect();
+      const nodeRect = nodeEl.getBoundingClientRect();
+
+      // Calculate scroll position to center the active node
+      const scrollLeft = nodeEl.offsetLeft - containerRect.width / 2 + nodeRect.width / 2;
+
+      container.scrollTo({
+        left: Math.max(0, scrollLeft),
+        behavior: 'smooth'
+      });
+    }
+  }, [activeNodeIndex]);
+
   const isStarted = activeNodeIndex >= 0;
   const allComplete = activeNodeIndex > flow.nodes.length;
 
@@ -182,7 +205,7 @@ function FlowStream({ flow, index }: { flow: TaskFlow; index: number }) {
       {/* Stream visualization - more spacing between nodes */}
       <div className="relative pl-4 md:pl-12">
         {/* Main stream line */}
-        <div className="relative flex items-center gap-6 md:gap-10 pt-20 pb-8 overflow-x-auto scrollbar-hide">
+        <div ref={scrollContainerRef} className="relative flex items-center gap-6 md:gap-10 pt-20 pb-8 overflow-x-auto scrollbar-hide">
           {/* Origin point */}
           <div
             className="w-3 h-3 rounded-full flex-shrink-0 transition-all duration-500"
@@ -206,7 +229,11 @@ function FlowStream({ flow, index }: { flow: TaskFlow; index: number }) {
             const isActive = activeNodeIndex > nodeIndex; // Node is active if we've passed it
 
             return (
-              <div key={nodeIndex} className="flex items-center gap-6 md:gap-10 flex-shrink-0">
+              <div
+                key={nodeIndex}
+                ref={(el) => { nodeRefs.current[nodeIndex] = el; }}
+                className="flex items-center gap-6 md:gap-10 flex-shrink-0"
+              >
                 {/* Node */}
                 <div
                   className={`relative flex flex-col items-center transition-all duration-500 ${isActive ? 'scale-105' : 'scale-100'}`}
