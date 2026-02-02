@@ -87,9 +87,9 @@ const securityBlocks = [
 ];
 
 const statBadges = [
-  { bold: "AES-256 / TLS 1.3", muted: "Encrypted at rest and in transit" },
-  { bold: "Per-user isolation", muted: "Your data never touches another user's context" },
-  { bold: "Full audit trail", muted: "Every action, every model, timestamped" },
+  { bold: "Zero plaintext storage", muted: "Credentials never stored as readable text" },
+  { bold: "SOC 2 on roadmap", muted: "Compliance audit in progress" },
+  { bold: "GDPR-ready", muted: "Data sovereignty by design" },
 ];
 
 export function Security() {
@@ -148,13 +148,6 @@ export function Security() {
                 WebkitBackdropFilter: "blur(12px)",
               }}
             >
-              {/* Icon */}
-              <div
-                className="flex justify-center mb-4"
-                style={{ color: "var(--accent-wave)", opacity: 0.6 }}
-              >
-                {block.icon}
-              </div>
               <h3
                 className="font-sans font-semibold text-white mb-3"
                 style={{ fontSize: "1.2rem" }}
