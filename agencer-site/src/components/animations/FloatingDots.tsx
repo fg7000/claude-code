@@ -28,14 +28,14 @@ export function FloatingDots({ count = 20, className = "" }: FloatingDotsProps) 
   const dots = useMemo(() => {
     return Array.from({ length: count }, (_, i) => {
       const seed = i * 1000;
-      const size = 2 + seededRandom(seed) * 4; // 2-6px
+      const size = 3 + seededRandom(seed) * 5; // 3-8px (larger)
       const left = seededRandom(seed + 1) * 100;
       const top = seededRandom(seed + 2) * 100;
-      const opacity = 0.2 + seededRandom(seed + 3) * 0.3; // 0.2-0.5
+      const opacity = 0.4 + seededRandom(seed + 3) * 0.4; // 0.4-0.8 (brighter)
       const color = LOGO_COLORS[Math.floor(seededRandom(seed + 4) * LOGO_COLORS.length)];
       const animationClass = `float-${(i % 3) + 1}`;
-      const animationDelay = seededRandom(seed + 5) * -20; // Offset animation start
-      const hasGlow = seededRandom(seed + 6) > 0.6; // 40% chance of glow
+      const animationDelay = seededRandom(seed + 5) * -20;
+      const glowIntensity = 1 + seededRandom(seed + 6) * 2; // 1-3x glow multiplier
 
       return {
         id: i,
@@ -46,7 +46,7 @@ export function FloatingDots({ count = 20, className = "" }: FloatingDotsProps) 
         color,
         animationClass,
         animationDelay,
-        hasGlow,
+        glowIntensity,
       };
     });
   }, [count]);
@@ -67,7 +67,8 @@ export function FloatingDots({ count = 20, className = "" }: FloatingDotsProps) 
             borderRadius: "50%",
             opacity: dot.opacity,
             animationDelay: `${dot.animationDelay}s`,
-            boxShadow: dot.hasGlow ? `0 0 ${dot.size * 2}px ${dot.color}` : "none",
+            boxShadow: `0 0 ${dot.size * dot.glowIntensity}px ${dot.color}, 0 0 ${dot.size * dot.glowIntensity * 2}px ${dot.color}, 0 0 ${dot.size * dot.glowIntensity * 3}px ${dot.color}40`,
+            filter: `blur(${dot.size * 0.1}px)`,
           }}
         />
       ))}
@@ -80,14 +81,14 @@ export function FloatingDotsSection({ count = 15, className = "" }: FloatingDots
   const dots = useMemo(() => {
     return Array.from({ length: count }, (_, i) => {
       const seed = i * 1000 + 500; // Different seed from global version
-      const size = 2 + seededRandom(seed) * 4;
+      const size = 3 + seededRandom(seed) * 5; // 3-8px
       const left = seededRandom(seed + 1) * 100;
       const top = seededRandom(seed + 2) * 100;
-      const opacity = 0.2 + seededRandom(seed + 3) * 0.3;
+      const opacity = 0.4 + seededRandom(seed + 3) * 0.4; // 0.4-0.8
       const color = LOGO_COLORS[Math.floor(seededRandom(seed + 4) * LOGO_COLORS.length)];
       const animationClass = `float-${(i % 3) + 1}`;
       const animationDelay = seededRandom(seed + 5) * -20;
-      const hasGlow = seededRandom(seed + 6) > 0.6;
+      const glowIntensity = 1 + seededRandom(seed + 6) * 2; // 1-3x glow multiplier
 
       return {
         id: i,
@@ -98,7 +99,7 @@ export function FloatingDotsSection({ count = 15, className = "" }: FloatingDots
         color,
         animationClass,
         animationDelay,
-        hasGlow,
+        glowIntensity,
       };
     });
   }, [count]);
@@ -119,7 +120,8 @@ export function FloatingDotsSection({ count = 15, className = "" }: FloatingDots
             borderRadius: "50%",
             opacity: dot.opacity,
             animationDelay: `${dot.animationDelay}s`,
-            boxShadow: dot.hasGlow ? `0 0 ${dot.size * 2}px ${dot.color}` : "none",
+            boxShadow: `0 0 ${dot.size * dot.glowIntensity}px ${dot.color}, 0 0 ${dot.size * dot.glowIntensity * 2}px ${dot.color}, 0 0 ${dot.size * dot.glowIntensity * 3}px ${dot.color}40`,
+            filter: `blur(${dot.size * 0.1}px)`,
           }}
         />
       ))}

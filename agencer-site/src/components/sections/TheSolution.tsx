@@ -1,13 +1,9 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { motion } from "framer-motion";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { AgencerLogo } from "@/components/ui/AgencerLogo";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const cards = [
   {
@@ -28,58 +24,10 @@ const cards = [
 ];
 
 export function TheSolution() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (!sectionRef.current || prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      // Pin the section
-      ScrollTrigger.create({
-        trigger: sectionRef.current,
-        start: "top top",
-        end: "+=300%",
-        pin: true,
-        pinSpacing: true,
-      });
-
-      // Animate cards
-      cardsRef.current.forEach((card, i) => {
-        if (!card) return;
-
-        gsap.set(card, {
-          opacity: 0,
-          x: 100,
-          rotateY: 5,
-        });
-
-        gsap.to(card, {
-          opacity: 1,
-          x: 0,
-          rotateY: 0,
-          duration: 0.8,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: `${25 + i * 25}% top`,
-            end: `${35 + i * 25}% top`,
-            scrub: 1,
-          },
-        });
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
     <section
-      ref={sectionRef}
       id="the-solution"
-      className="relative min-h-screen flex items-center justify-center bg-bg-primary overflow-hidden"
+      className="relative py-32 md:py-48 flex items-center justify-center bg-bg-primary overflow-hidden"
     >
       {/* Subtle radial gradient */}
       <div
@@ -99,8 +47,14 @@ export function TheSolution() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-[1200px] mx-auto px-6 pt-32">
-        <div className="text-center mb-16">
+      <div className="relative z-10 w-full max-w-[1200px] mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+        >
           <SectionLabel>The Conductor</SectionLabel>
           <h2
             className="font-serif font-medium text-text-headline"
@@ -108,16 +62,18 @@ export function TheSolution() {
           >
             Tell Agencer what you need. Walk away.
           </h2>
-        </div>
+        </motion.div>
 
         {/* Cards container */}
         <div className="flex flex-col lg:flex-row gap-6 justify-center items-center lg:items-stretch">
           {cards.map((card, i) => (
-            <div
+            <motion.div
               key={i}
-              ref={(el) => { cardsRef.current[i] = el; }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, delay: i * 0.15 }}
               className="w-full max-w-[400px]"
-              style={{ perspective: "1000px" }}
             >
               <GlassPanel className="p-6 h-full flex flex-col" hover>
                 {/* Voice waveform icon */}
@@ -142,7 +98,7 @@ export function TheSolution() {
                   {card.footer}
                 </p>
               </GlassPanel>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

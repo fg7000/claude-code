@@ -86,8 +86,8 @@ export function BlueWave({ intensity = "normal", className = "" }: BlueWaveProps
       ref={canvasRef}
       className={`fixed inset-0 pointer-events-none z-0 ${className}`}
       style={{
-        filter: "blur(60px)",
-        opacity: 0.12,
+        filter: "blur(40px)",
+        opacity: 0.4,
       }}
     />
   );
