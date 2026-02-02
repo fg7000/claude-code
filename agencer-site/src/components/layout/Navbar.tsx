@@ -39,11 +39,13 @@ export function Navbar() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "glass-panel !rounded-none border-t-0 border-x-0"
-            : "bg-transparent"
-        }`}
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        style={{
+          background: 'rgba(10, 10, 10, 0.95)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+        }}
       >
         <nav className="max-w-[1400px] mx-auto px-6 md:px-8 h-16 md:h-20 flex items-center justify-between">
           {/* Logo */}

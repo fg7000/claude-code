@@ -98,12 +98,12 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="mb-16 last:mb-0"
+      className="mb-20 last:mb-0"
     >
-      {/* Voice command */}
-      <div className="mb-6">
+      {/* Voice command - larger padding and font */}
+      <div className="mb-10">
         <div
-          className="p-5 max-w-2xl rounded-2xl"
+          className="p-6 md:p-8 max-w-3xl rounded-2xl"
           style={{
             background: 'var(--glass-bg)',
             border: `1px solid ${flow.color}30`,
@@ -111,24 +111,27 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
             WebkitBackdropFilter: 'blur(var(--glass-blur))',
           }}
         >
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-4">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: `${flow.color}20`, border: `1px solid ${flow.color}40` }}
             >
-              <Mic className="w-4 h-4" style={{ color: flow.color }} />
+              <Mic className="w-5 h-5" style={{ color: flow.color }} />
             </div>
-            <p className="font-serif italic text-text-headline text-base leading-relaxed">
+            <p
+              className="font-serif italic text-text-headline leading-relaxed"
+              style={{ fontSize: 'clamp(1.1rem, 1.3vw, 1.25rem)' }}
+            >
               &ldquo;{flow.command}&rdquo;
             </p>
           </div>
         </div>
       </div>
 
-      {/* Stream visualization */}
+      {/* Stream visualization - more spacing between nodes */}
       <div className="relative pl-4 md:pl-12 overflow-hidden">
         {/* Main stream line */}
-        <div className="relative flex items-center gap-3 md:gap-6 py-4 overflow-x-auto scrollbar-hide">
+        <div className="relative flex items-center gap-6 md:gap-10 py-6 overflow-x-auto scrollbar-hide">
           {/* Origin point */}
           <div
             className="w-3 h-3 rounded-full flex-shrink-0 transition-all duration-500"
@@ -138,11 +141,12 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
             }}
           />
 
-          {/* Connecting line */}
+          {/* Connecting line - thinner, lower opacity */}
           <div
-            className="h-0.5 w-8 md:w-12 flex-shrink-0 transition-all duration-500"
+            className="h-px w-10 md:w-16 flex-shrink-0 transition-all duration-500"
             style={{
-              background: `linear-gradient(to right, ${flowProgress > 0 ? flow.color : flow.color + '40'}, ${flowProgress > 0.1 ? flow.color : flow.color + '40'})`
+              background: flowProgress > 0 ? `${flow.color}50` : `${flow.color}30`,
+              opacity: 0.5
             }}
           />
 
@@ -152,22 +156,23 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
             const isActive = nodeProgress;
 
             return (
-              <div key={nodeIndex} className="flex items-center gap-3 md:gap-6 flex-shrink-0">
+              <div key={nodeIndex} className="flex items-center gap-6 md:gap-10 flex-shrink-0">
                 {/* Node */}
                 <div
                   className={`relative flex flex-col items-center transition-all duration-500 ${isActive ? 'scale-105' : 'scale-100'}`}
                 >
-                  {/* Split indicator */}
+                  {/* Split indicator - improved readability */}
                   {node.split && (
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 mb-2">
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-2">
                       {node.splitLabels?.map((label, i) => (
                         <span
                           key={i}
-                          className="text-[10px] font-mono whitespace-nowrap px-2 py-0.5 rounded"
+                          className="text-xs font-mono whitespace-nowrap px-3 py-1 rounded-md"
                           style={{
-                            backgroundColor: `${flow.color}15`,
-                            color: isActive ? flow.color : `${flow.color}60`,
-                            border: `1px solid ${flow.color}30`
+                            backgroundColor: 'rgba(10, 10, 10, 0.9)',
+                            color: isActive ? flow.color : `${flow.color}80`,
+                            border: `1px solid ${flow.color}40`,
+                            backdropFilter: 'blur(8px)',
                           }}
                         >
                           {label}
@@ -178,7 +183,7 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
 
                   {/* Node circle */}
                   <div
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-500"
+                    className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-500"
                     style={{
                       backgroundColor: isActive ? `${flow.color}20` : 'rgba(255,255,255,0.05)',
                       border: `2px solid ${isActive ? flow.color : flow.color + '40'}`,
@@ -190,21 +195,22 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
                     </span>
                   </div>
 
-                  {/* Node label */}
+                  {/* Node label - better spacing */}
                   <span
-                    className="mt-2 text-[11px] md:text-xs font-mono text-center max-w-[80px] md:max-w-[100px] transition-all duration-500"
+                    className="mt-3 text-xs md:text-sm font-mono text-center max-w-[90px] md:max-w-[120px] transition-all duration-500 leading-tight"
                     style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                   >
                     {node.label}
                   </span>
                 </div>
 
-                {/* Connecting line to next node */}
+                {/* Connecting line to next node - thinner, lower opacity */}
                 {nodeIndex < flow.nodes.length - 1 && (
                   <div
-                    className="h-0.5 w-8 md:w-12 flex-shrink-0 transition-all duration-500"
+                    className="h-px w-10 md:w-16 flex-shrink-0 transition-all duration-500"
                     style={{
-                      background: nodeProgress ? flow.color : `${flow.color}40`
+                      background: nodeProgress ? `${flow.color}50` : `${flow.color}30`,
+                      opacity: 0.5
                     }}
                   />
                 )}
@@ -214,9 +220,9 @@ function FlowStream({ flow, progress, index }: { flow: TaskFlow; progress: numbe
         </div>
       </div>
 
-      {/* Tagline */}
+      {/* Tagline - more vertical spacing */}
       <p
-        className="mt-4 pl-4 md:pl-12 font-mono text-sm transition-all duration-500"
+        className="mt-8 mb-12 pl-4 md:pl-12 font-mono text-sm md:text-base transition-all duration-500"
         style={{ color: flowProgress > 0.8 ? flow.color : 'var(--text-secondary)' }}
       >
         {flow.tagline}
@@ -298,8 +304,8 @@ export function HowItWorks() {
             <span className="font-mono text-sm text-text-secondary">Your voice command splits into parallel task streams</span>
           </div>
 
-          {/* Task flows */}
-          <div className="space-y-8">
+          {/* Task flows - more vertical spacing between flows */}
+          <div className="space-y-16">
             {flows.map((flow, index) => (
               <FlowStream
                 key={flow.id}
