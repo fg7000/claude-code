@@ -3,17 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, X, Send, MicOff } from "lucide-react";
-
-// Agencer brand colors for the blades
-const BLADE_COLORS = [
-  "#F59E0B", // amber
-  "#D97706", // copper
-  "#F43F5E", // rose
-  "#8B5CF6", // violet
-  "#6366F1", // indigo
-  "#3B82F6", // blue
-  "#14B8A6", // teal
-];
+import Image from "next/image";
 
 // Demo script lines
 const DEMO_LINES = [
@@ -24,106 +14,65 @@ const DEMO_LINES = [
 
 interface AgencerLogoProps {
   size?: number;
-  bladeOpacities: number[];
-  ringBrightness: number;
-  ringGlow: number;
-  idlePulse?: number;
+  brightness?: number;
+  glow?: number;
+  pulseIntensity?: number;
 }
 
-// Decomposed Agencer Logo - blades stay in EXACT formation
-// Only opacity/brightness/glow changes, NEVER position or transform
+// Agencer Logo using the actual PNG with CSS filter animations
 function AgencerLogo({
   size = 40,
-  bladeOpacities,
-  ringBrightness = 0.1,
-  ringGlow = 0,
-  idlePulse = 0
+  brightness = 1,
+  glow = 0,
+  pulseIntensity = 0,
 }: AgencerLogoProps) {
-  const centerX = size / 2;
-  const centerY = size / 2;
-  const bladeOuterRadius = size * 0.38;
-  const bladeInnerRadius = size * 0.08;
-  const ringRadius = size * 0.46; // Ring sits outside blade tips with gap
+  const ringSize = size + 12; // Ring sits outside the logo
+  const ringRadius = ringSize / 2;
 
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      style={{ overflow: "visible" }}
-    >
-      {/* Outer ring - separate from blades, animates on user speaking */}
-      <circle
-        cx={centerX}
-        cy={centerY}
-        r={ringRadius}
-        fill="none"
-        stroke={`rgba(255, 255, 255, ${0.1 + ringBrightness * 0.3})`}
-        strokeWidth={1.5}
+    <div className="relative" style={{ width: ringSize, height: ringSize }}>
+      {/* Outer ring - animates when user speaks */}
+      <svg
+        width={ringSize}
+        height={ringSize}
+        viewBox={`0 0 ${ringSize} ${ringSize}`}
+        className="absolute inset-0"
+        style={{ overflow: "visible" }}
+      >
+        <circle
+          cx={ringRadius}
+          cy={ringRadius}
+          r={ringRadius - 2}
+          fill="none"
+          stroke={`rgba(255, 255, 255, ${0.1 + pulseIntensity * 0.25})`}
+          strokeWidth={1.5}
+          style={{
+            filter: pulseIntensity > 0.1
+              ? `drop-shadow(0 0 ${pulseIntensity * 15}px rgba(212, 168, 83, ${pulseIntensity * 0.6}))`
+              : undefined,
+            transition: "stroke 0.1s ease-out",
+          }}
+        />
+      </svg>
+
+      {/* Logo image with filter animations */}
+      <div
+        className="absolute inset-0 flex items-center justify-center"
         style={{
-          filter: ringGlow > 0
-            ? `drop-shadow(0 0 ${ringGlow * 12}px rgba(212, 168, 83, ${ringGlow * 0.5}))`
-            : undefined,
-          transition: "stroke 0.1s ease-out",
+          filter: `brightness(${brightness}) saturate(${1 + glow * 0.3}) drop-shadow(0 0 ${glow * 20}px rgba(255, 200, 100, ${glow * 0.5}))`,
+          transition: "filter 0.15s ease-out",
         }}
-      />
-
-      {/* Inner blades - colorful petal shapes that NEVER move position */}
-      {BLADE_COLORS.map((color, index) => {
-        const totalBlades = BLADE_COLORS.length;
-        const anglePerBlade = (Math.PI * 2) / totalBlades;
-        const bladeAngle = (index / totalBlades) * Math.PI * 2 - Math.PI / 2;
-
-        // Each blade is a teardrop/petal shape pointing outward
-        const tipX = centerX + Math.cos(bladeAngle) * bladeOuterRadius;
-        const tipY = centerY + Math.sin(bladeAngle) * bladeOuterRadius;
-
-        // Base of blade (near center)
-        const baseX = centerX + Math.cos(bladeAngle) * bladeInnerRadius;
-        const baseY = centerY + Math.sin(bladeAngle) * bladeInnerRadius;
-
-        // Control points for the curved sides
-        const spreadAngle = anglePerBlade * 0.35;
-        const midRadius = (bladeOuterRadius + bladeInnerRadius) / 2;
-
-        const leftCtrlX = centerX + Math.cos(bladeAngle - spreadAngle) * midRadius;
-        const leftCtrlY = centerY + Math.sin(bladeAngle - spreadAngle) * midRadius;
-        const rightCtrlX = centerX + Math.cos(bladeAngle + spreadAngle) * midRadius;
-        const rightCtrlY = centerY + Math.sin(bladeAngle + spreadAngle) * midRadius;
-
-        const baseOpacity = 0.5 + idlePulse * 0.05;
-        const opacity = bladeOpacities[index] ?? baseOpacity;
-        const isFlashing = opacity > 0.7;
-
-        return (
-          <path
-            key={index}
-            d={`
-              M ${baseX} ${baseY}
-              Q ${leftCtrlX} ${leftCtrlY} ${tipX} ${tipY}
-              Q ${rightCtrlX} ${rightCtrlY} ${baseX} ${baseY}
-              Z
-            `}
-            fill={color}
-            style={{
-              opacity,
-              filter: isFlashing
-                ? `drop-shadow(0 0 ${(opacity - 0.5) * 16}px ${color})`
-                : undefined,
-              transition: "opacity 0.15s ease-out",
-            }}
-          />
-        );
-      })}
-
-      {/* Center dot */}
-      <circle
-        cx={centerX}
-        cy={centerY}
-        r={bladeInnerRadius * 0.6}
-        fill={`rgba(255, 255, 255, ${0.85 + idlePulse * 0.1})`}
-      />
-    </svg>
+      >
+        <Image
+          src="/agencer-logo.png"
+          alt="Agencer"
+          width={size}
+          height={size}
+          className="object-contain"
+          priority
+        />
+      </div>
+    </div>
   );
 }
 
@@ -272,12 +221,9 @@ export function VoiceWidget() {
   const lastScrollY = useRef(0);
 
   // Animation states
-  const [bladeOpacities, setBladeOpacities] = useState<number[]>(
-    BLADE_COLORS.map(() => 0.5)
-  );
-  const [ringBrightness, setRingBrightness] = useState(0);
-  const [ringGlow, setRingGlow] = useState(0);
-  const [idlePulse, setIdlePulse] = useState(0);
+  const [brightness, setBrightness] = useState(1);
+  const [glow, setGlow] = useState(0);
+  const [pulseIntensity, setPulseIntensity] = useState(0);
 
   // Demo state
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
@@ -287,7 +233,7 @@ export function VoiceWidget() {
   const [demoCompleted, setDemoCompleted] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
 
-  // Panel demo state (separate from collapsed widget demo)
+  // Panel demo state
   const [panelDemoStarted, setPanelDemoStarted] = useState(false);
   const [panelWords, setPanelWords] = useState<string[]>([]);
   const [panelWordIndex, setPanelWordIndex] = useState(-1);
@@ -299,69 +245,32 @@ export function VoiceWidget() {
   const demoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const panelDemoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const ambientIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const idlePulseRef = useRef<NodeJS.Timeout | null>(null);
-  const lastFlashedBlade = useRef<number>(-1);
-  const animationFrameRef = useRef<number | null>(null);
 
-  // Idle pulse animation (subtle breathing when idle)
-  useEffect(() => {
-    let frame = 0;
-    const animate = () => {
-      frame += 0.02;
-      const pulse = Math.sin(frame) * 0.5 + 0.5; // 0 to 1
-      setIdlePulse(pulse);
-      idlePulseRef.current = setTimeout(animate, 50);
-    };
-    animate();
-    return () => {
-      if (idlePulseRef.current) clearTimeout(idlePulseRef.current);
-    };
+  // Flash the logo (brightness pulse for speaking)
+  const flashLogo = useCallback(() => {
+    setBrightness(1.4);
+    setGlow(0.8);
+
+    // Fade back over 300ms
+    setTimeout(() => setBrightness(1.2), 100);
+    setTimeout(() => {
+      setBrightness(1);
+      setGlow(0);
+    }, 300);
   }, []);
 
-  // Flash a random blade (not the same as last time)
-  const flashRandomBlade = useCallback(() => {
-    let nextBlade: number;
-    do {
-      nextBlade = Math.floor(Math.random() * BLADE_COLORS.length);
-    } while (nextBlade === lastFlashedBlade.current && BLADE_COLORS.length > 1);
-
-    lastFlashedBlade.current = nextBlade;
-
-    setBladeOpacities(prev => {
-      const newOpacities = [...prev];
-      newOpacities[nextBlade] = 1;
-      return newOpacities;
-    });
-
-    const startTime = performance.now();
-    const duration = 300;
-
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const currentOpacity = 1 - (1 - 0.5) * progress;
-
-      setBladeOpacities(prev => {
-        const newOpacities = [...prev];
-        if (newOpacities[nextBlade] !== 1) {
-          newOpacities[nextBlade] = currentOpacity;
-        }
-        return newOpacities;
-      });
-
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-  }, []);
-
-  // Start ambient twinkle
+  // Start ambient twinkle (gentle periodic pulse)
   const startAmbientTwinkle = useCallback(() => {
     if (ambientIntervalRef.current) clearInterval(ambientIntervalRef.current);
-    ambientIntervalRef.current = setInterval(flashRandomBlade, 2000);
-  }, [flashRandomBlade]);
+    ambientIntervalRef.current = setInterval(() => {
+      setBrightness(1.15);
+      setGlow(0.3);
+      setTimeout(() => {
+        setBrightness(1);
+        setGlow(0);
+      }, 400);
+    }, 2000);
+  }, []);
 
   const stopAmbientTwinkle = useCallback(() => {
     if (ambientIntervalRef.current) {
@@ -371,7 +280,7 @@ export function VoiceWidget() {
   }, []);
 
   // Type out a line word by word (for collapsed widget)
-  const typeOutLine = useCallback((line: string, lineIndex: number, onComplete: () => void) => {
+  const typeOutLine = useCallback((line: string, lineIdx: number, onComplete: () => void) => {
     const words = line.split(" ");
     setCurrentWords(words);
     setCurrentWordIndex(-1);
@@ -386,7 +295,7 @@ export function VoiceWidget() {
       }
 
       setCurrentWordIndex(wordIdx);
-      flashRandomBlade();
+      flashLogo();
 
       const word = words[wordIdx];
       let delay = 250 + Math.random() * 100;
@@ -399,7 +308,7 @@ export function VoiceWidget() {
     };
 
     demoTimeoutRef.current = setTimeout(typeNextWord, 300);
-  }, [flashRandomBlade]);
+  }, [flashLogo]);
 
   // Run demo for collapsed widget
   const runDemo = useCallback(() => {
@@ -441,7 +350,7 @@ export function VoiceWidget() {
   }, [userInteracted, isOpen, typeOutLine, stopAmbientTwinkle, startAmbientTwinkle]);
 
   // Type out line for panel demo
-  const typeOutPanelLine = useCallback((line: string, lineIndex: number, onComplete: () => void) => {
+  const typeOutPanelLine = useCallback((line: string, lineIdx: number, onComplete: () => void) => {
     const words = line.split(" ");
     setPanelWords(words);
     setPanelWordIndex(-1);
@@ -455,7 +364,7 @@ export function VoiceWidget() {
       }
 
       setPanelWordIndex(wordIdx);
-      flashRandomBlade();
+      flashLogo();
 
       const word = words[wordIdx];
       let delay = 250 + Math.random() * 100;
@@ -468,7 +377,7 @@ export function VoiceWidget() {
     };
 
     panelDemoTimeoutRef.current = setTimeout(typeNextWord, 300);
-  }, [flashRandomBlade]);
+  }, [flashLogo]);
 
   // Run demo in expanded panel
   const runPanelDemo = useCallback(() => {
@@ -480,7 +389,6 @@ export function VoiceWidget() {
 
       if (lineIndex >= DEMO_LINES.length) {
         startAmbientTwinkle();
-        // Request mic permission after demo
         checkMicPermission();
         return;
       }
@@ -499,7 +407,6 @@ export function VoiceWidget() {
       });
     };
 
-    // Start after a brief pause
     panelDemoTimeoutRef.current = setTimeout(() => playLine(0), 500);
   }, [isOpen, panelDemoStarted, typeOutPanelLine, startAmbientTwinkle]);
 
@@ -517,21 +424,18 @@ export function VoiceWidget() {
     }
   }, []);
 
-  // Simulate ring breathing when listening
+  // Ring breathing when listening
   useEffect(() => {
     if (!isListening) {
-      setRingBrightness(0);
-      setRingGlow(0);
+      setPulseIntensity(0);
       return;
     }
 
-    // Simulate mic input with gentle pulse
     let frame = 0;
     const animate = () => {
       frame += 0.08;
-      const val = (Math.sin(frame) * 0.5 + 0.5) * 0.6;
-      setRingBrightness(val);
-      setRingGlow(val * 0.5);
+      const val = (Math.sin(frame) * 0.5 + 0.5) * 0.7;
+      setPulseIntensity(val);
     };
     const interval = setInterval(animate, 50);
     return () => clearInterval(interval);
@@ -600,7 +504,6 @@ export function VoiceWidget() {
       if (demoTimeoutRef.current) clearTimeout(demoTimeoutRef.current);
       if (panelDemoTimeoutRef.current) clearTimeout(panelDemoTimeoutRef.current);
       if (ambientIntervalRef.current) clearInterval(ambientIntervalRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
   }, []);
 
@@ -639,13 +542,12 @@ export function VoiceWidget() {
               className="group relative"
               aria-label="Open voice assistant"
             >
-              <div className="relative w-14 h-14 rounded-full bg-bg-primary border border-glass-border flex items-center justify-center">
+              <div className="relative flex items-center justify-center rounded-full bg-bg-primary/80 border border-glass-border p-2">
                 <AgencerLogo
-                  size={40}
-                  bladeOpacities={bladeOpacities}
-                  ringBrightness={ringBrightness}
-                  ringGlow={ringGlow}
-                  idlePulse={idlePulse}
+                  size={36}
+                  brightness={brightness}
+                  glow={glow}
+                  pulseIntensity={pulseIntensity}
                 />
               </div>
               <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap px-3 py-1.5 rounded-lg bg-bg-tertiary text-sm text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
@@ -692,14 +594,13 @@ export function VoiceWidget() {
                 <X className="w-5 h-5 text-white/50" />
               </button>
 
-              {/* Logo area - top third */}
-              <div className="flex-shrink-0 pt-10 pb-6 flex items-center justify-center">
+              {/* Logo area - top */}
+              <div className="flex-shrink-0 pt-12 pb-8 flex items-center justify-center">
                 <AgencerLogo
                   size={100}
-                  bladeOpacities={bladeOpacities}
-                  ringBrightness={ringBrightness}
-                  ringGlow={ringGlow}
-                  idlePulse={idlePulse}
+                  brightness={brightness}
+                  glow={glow}
+                  pulseIntensity={pulseIntensity}
                 />
               </div>
 
