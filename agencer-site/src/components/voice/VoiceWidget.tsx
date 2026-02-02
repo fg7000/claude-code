@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, X, Send, MicOff } from "lucide-react";
-import Image from "next/image";
 
 // Demo script lines
 const DEMO_LINES = [
@@ -26,7 +25,7 @@ function AgencerLogo({
   glow = 0,
   pulseIntensity = 0,
 }: AgencerLogoProps) {
-  const ringSize = size + 12; // Ring sits outside the logo
+  const ringSize = size + 12;
   const ringRadius = ringSize / 2;
 
   return (
@@ -63,13 +62,13 @@ function AgencerLogo({
           transition: "filter 0.15s ease-out",
         }}
       >
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/agencer-logo.png"
           alt="Agencer"
           width={size}
           height={size}
-          className="object-contain"
-          priority
+          style={{ objectFit: "contain" }}
         />
       </div>
     </div>
