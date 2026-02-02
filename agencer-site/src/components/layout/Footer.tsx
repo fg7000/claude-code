@@ -1,7 +1,7 @@
 "use client";
 
 import { Github, Linkedin, Twitter } from "lucide-react";
-import { AgencerLogo } from "@/components/ui/AgencerLogo";
+import Image from "next/image";
 
 export function Footer() {
   return (
@@ -9,7 +9,13 @@ export function Footer() {
       <div className="max-w-[1400px] mx-auto px-6 md:px-8 h-20 flex items-center justify-between">
         {/* Logo and Copyright */}
         <div className="flex items-center gap-3">
-          <AgencerLogo size={24} />
+          <Image
+            src="/agencer-logo.png"
+            alt="Agencer"
+            width={24}
+            height={24}
+            className="w-6 h-6"
+          />
           <span className="text-sm text-text-secondary">
             © 2026 Agencer, Inc.
           </span>

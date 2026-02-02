@@ -2,9 +2,20 @@
 
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { GradientBlobs } from "@/components/animations/GradientBlobs";
-import { AgencerLogo } from "@/components/ui/AgencerLogo";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
+import { FloatingDotsSection } from "@/components/animations/FloatingDots";
+
+// Logo spectrum colors for particles
+const PARTICLE_COLORS = [
+  "232, 168, 56",   // amber
+  "212, 114, 74",   // copper
+  "199, 85, 119",   // rose
+  "139, 92, 246",   // violet
+  "99, 102, 241",   // indigo
+  "59, 130, 246",   // blue
+  "20, 184, 166",   // teal
+];
 
 export function FinalCTA() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -15,7 +26,7 @@ export function FinalCTA() {
     window.dispatchEvent(event);
   };
 
-  // Floating embers effect
+  // Floating particles effect with logo spectrum colors
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -37,18 +48,19 @@ export function FinalCTA() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    // Particles
-    const particles: { x: number; y: number; vx: number; vy: number; size: number; alpha: number }[] = [];
-    const numParticles = 30;
+    // Particles with varied colors
+    const particles: { x: number; y: number; vx: number; vy: number; size: number; alpha: number; color: string }[] = [];
+    const numParticles = 40;
 
     for (let i = 0; i < numParticles; i++) {
       particles.push({
         x: Math.random() * canvas.width,
         y: canvas.height + Math.random() * 100,
         vx: (Math.random() - 0.5) * 0.5,
-        vy: -0.5 - Math.random() * 1,
-        size: 1 + Math.random() * 2,
+        vy: -0.3 - Math.random() * 0.8,
+        size: 1 + Math.random() * 3,
         alpha: 0.3 + Math.random() * 0.5,
+        color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
       });
     }
 
@@ -64,12 +76,23 @@ export function FinalCTA() {
         if (p.y < -10) {
           p.y = rect.height + 10;
           p.x = Math.random() * rect.width;
+          p.color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
         }
 
-        // Draw particle
+        // Draw particle with glow
+        const x = p.x / (window.devicePixelRatio || 1);
+        const y = p.y / (window.devicePixelRatio || 1);
+
+        // Glow
         ctx.beginPath();
-        ctx.arc(p.x / (window.devicePixelRatio || 1), p.y / (window.devicePixelRatio || 1), p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(212, 168, 83, ${p.alpha})`;
+        ctx.arc(x, y, p.size * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.color}, ${p.alpha * 0.3})`;
+        ctx.fill();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.color}, ${p.alpha})`;
         ctx.fill();
       });
 
@@ -87,15 +110,29 @@ export function FinalCTA() {
   return (
     <section
       id="final-cta"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-bg-primary"
     >
-      {/* Warm gradient background */}
-      <GradientBlobs variant="warm" />
+      {/* Background with warm glow */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse at 50% 50%, rgba(20, 20, 26, 1) 0%, rgba(10, 10, 10, 1) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          background: "radial-gradient(ellipse at 50% 60%, rgba(74, 123, 247, 0.1) 0%, transparent 50%)",
+        }}
+      />
 
-      {/* Floating embers canvas */}
+      {/* Floating dots */}
+      <FloatingDotsSection count={30} />
+
+      {/* Floating particles canvas */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 w-full h-full pointer-events-none"
+        className="absolute inset-0 w-full h-full pointer-events-none z-[2]"
       />
 
       {/* Content */}
@@ -108,11 +145,17 @@ export function FinalCTA() {
           transition={{ duration: 0.8 }}
           className="relative mb-12"
         >
-          <AgencerLogo size={200} />
+          <Image
+            src="/agencer-logo.png"
+            alt="Agencer"
+            width={200}
+            height={200}
+            className="relative z-10"
+          />
           <div
-            className="absolute inset-0 blur-3xl opacity-40"
+            className="absolute inset-0 blur-3xl opacity-40 z-0"
             style={{
-              background: "radial-gradient(circle, rgba(212, 168, 83, 0.5) 0%, transparent 70%)",
+              background: "radial-gradient(circle, rgba(74, 123, 247, 0.5) 0%, transparent 70%)",
             }}
           />
         </motion.div>

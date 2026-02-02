@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { AgencerLogo } from "@/components/ui/AgencerLogo";
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -48,7 +48,13 @@ export function Navbar() {
         <nav className="max-w-[1400px] mx-auto px-6 md:px-8 h-16 md:h-20 flex items-center justify-between">
           {/* Logo */}
           <a href="#" className="flex items-center gap-3 group">
-            <AgencerLogo size={36} />
+            <Image
+              src="/agencer-logo.png"
+              alt="Agencer"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
             <span className="font-serif text-xl text-text-headline tracking-wide">
               agencer
             </span>
@@ -70,7 +76,7 @@ export function Navbar() {
               Talk to Agencer
             </button>
             <span className="text-text-secondary/30">•</span>
-            <Button variant="solid" size="sm" href="#">
+            <Button variant="outline" size="sm" href="#">
               Get Started
             </Button>
           </div>
@@ -99,7 +105,13 @@ export function Navbar() {
             <div className="flex flex-col h-full p-6">
               <div className="flex items-center justify-between mb-12">
                 <a href="#" className="flex items-center gap-3">
-                  <AgencerLogo size={36} />
+                  <Image
+                    src="/agencer-logo.png"
+                    alt="Agencer"
+                    width={32}
+                    height={32}
+                    className="w-8 h-8"
+                  />
                   <span className="font-serif text-xl text-text-headline tracking-wide">
                     agencer
                   </span>
@@ -116,13 +128,13 @@ export function Navbar() {
               <div className="flex flex-col gap-6">
                 <button
                   onClick={() => scrollToSection("pricing")}
-                  className="text-left text-2xl font-serif text-text-headline hover:text-accent-gold transition-colors"
+                  className="text-left text-2xl font-serif text-text-headline hover:text-accent-warm transition-colors"
                 >
                   Pricing
                 </button>
                 <button
                   onClick={openVoiceWidget}
-                  className="text-left text-2xl font-serif text-text-headline hover:text-accent-gold transition-colors"
+                  className="text-left text-2xl font-serif text-text-headline hover:text-accent-warm transition-colors"
                 >
                   Talk to Agencer
                 </button>

@@ -15,15 +15,14 @@ export function GlassPanel({
   className = "",
   hover = false,
 }: GlassPanelProps) {
-  const baseStyles = "glass-panel";
-  const highlightStyles = highlighted ? "!border-accent-gold/50" : "";
+  const baseStyles = highlighted ? "glass-panel-highlighted" : "glass-panel";
   const hoverStyles = hover
     ? "transition-all duration-300 hover:translate-y-[-4px] hover:border-white/20"
     : "";
 
   return (
     <motion.div
-      className={`${baseStyles} ${highlightStyles} ${hoverStyles} ${className}`}
+      className={`${baseStyles} ${hoverStyles} ${className}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}

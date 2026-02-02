@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, X, Send } from "lucide-react";
-import { AgencerLogo } from "@/components/ui/AgencerLogo";
+import Image from "next/image";
 
 export function VoiceWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,12 +75,15 @@ export function VoiceWidget() {
               className="group relative"
               aria-label="Open voice assistant"
             >
-              {/* Animated gradient border */}
-              <div className="absolute inset-0 rounded-full gradient-border pulse-subtle" />
-
-              {/* Inner button */}
-              <div className="relative w-14 h-14 md:w-14 md:h-14 rounded-full bg-bg-primary flex items-center justify-center m-[3px]">
-                <Mic className="w-6 h-6 text-text-headline" />
+              {/* Inner button with logo */}
+              <div className="relative w-14 h-14 md:w-14 md:h-14 rounded-full bg-bg-primary border border-glass-border flex items-center justify-center pulse-subtle overflow-hidden">
+                <Image
+                  src="/agencer-logo.png"
+                  alt="Agencer"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10"
+                />
               </div>
 
               {/* Hover label */}
@@ -116,7 +119,13 @@ export function VoiceWidget() {
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-glass-border">
                 <div className="flex items-center gap-2">
-                  <AgencerLogo size={28} />
+                  <Image
+                    src="/agencer-logo.png"
+                    alt="Agencer"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7"
+                  />
                   <span className="font-serif text-lg text-text-headline">Agencer</span>
                 </div>
                 <button
@@ -132,7 +141,13 @@ export function VoiceWidget() {
               <div className="flex-1 p-4 overflow-y-auto h-[calc(100%-140px)] md:h-[calc(500px-140px)]">
                 <div className="flex gap-3">
                   <div className="flex-shrink-0">
-                    <AgencerLogo size={32} animate={false} />
+                    <Image
+                      src="/agencer-logo.png"
+                      alt="Agencer"
+                      width={32}
+                      height={32}
+                      className="w-8 h-8"
+                    />
                   </div>
                   <div className="glass-panel p-3 rounded-2xl rounded-tl-sm">
                     <p className="text-text-primary text-sm">
@@ -150,18 +165,18 @@ export function VoiceWidget() {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 bg-bg-tertiary border border-glass-border rounded-full px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-accent-gold/50 transition-colors"
+                    className="flex-1 bg-bg-tertiary border border-glass-border rounded-full px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-accent-wave/50 transition-colors"
                   />
                   <button
                     type="button"
-                    className="p-2.5 rounded-full bg-bg-tertiary border border-glass-border hover:border-accent-gold/50 transition-colors"
+                    className="p-2.5 rounded-full bg-bg-tertiary border border-glass-border hover:border-accent-wave/50 transition-colors"
                     aria-label="Voice input"
                   >
                     <Mic className="w-5 h-5 text-text-secondary" />
                   </button>
                   <button
                     type="submit"
-                    className="p-2.5 rounded-full bg-accent-gold hover:bg-accent-gold-hover transition-colors"
+                    className="p-2.5 rounded-full bg-accent-warm hover:bg-accent-warm-hover transition-colors"
                     aria-label="Send message"
                   >
                     <Send className="w-5 h-5 text-bg-primary" />

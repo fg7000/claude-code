@@ -9,6 +9,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
+  const rafRef = useRef<((time: number) => void) | null>(null);
 
   useEffect(() => {
     // Check for reduced motion preference
@@ -23,7 +24,6 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       touchMultiplier: 2,
-      infinite: false,
     });
 
     lenisRef.current = lenis;
@@ -31,17 +31,20 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     // Connect Lenis to GSAP ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
 
-    // Use GSAP ticker to drive Lenis
-    gsap.ticker.add((time) => {
+    // Create the raf function and store reference for cleanup
+    const raf = (time: number) => {
       lenis.raf(time * 1000);
-    });
+    };
+    rafRef.current = raf;
 
+    // Use GSAP ticker to drive Lenis
+    gsap.ticker.add(raf);
     gsap.ticker.lagSmoothing(0);
 
     return () => {
-      gsap.ticker.remove((time) => {
-        lenis.raf(time * 1000);
-      });
+      if (rafRef.current) {
+        gsap.ticker.remove(rafRef.current);
+      }
       lenis.destroy();
       lenisRef.current = null;
     };

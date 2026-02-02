@@ -4,9 +4,9 @@ import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { GradientBlobs } from "@/components/animations/GradientBlobs";
-import { AgencerLogo } from "@/components/ui/AgencerLogo";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
+import { FloatingDotsSection } from "@/components/animations/FloatingDots";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -42,23 +42,48 @@ export function Hero() {
     <section
       ref={sectionRef}
       id="hero"
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden bg-bg-primary"
     >
-      {/* Animated gradient background */}
-      <GradientBlobs variant="dark" />
+      {/* Dark gradient background with subtle movement */}
+      <div className="absolute inset-0">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse at 50% 50%, rgba(14, 14, 18, 1) 0%, rgba(10, 10, 10, 1) 100%)",
+          }}
+        />
+        {/* Subtle animated gradient shift */}
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            background: "radial-gradient(ellipse at 30% 70%, rgba(74, 123, 247, 0.05) 0%, transparent 50%)",
+          }}
+        />
+      </div>
+
+      {/* Floating dots */}
+      <FloatingDotsSection count={25} />
 
       {/* Content */}
       <div
         ref={contentRef}
         className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto"
       >
-        {/* Logo */}
+        {/* Logo with rotation */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+          className="mb-6"
         >
-          <AgencerLogo size={120} className="mb-6" />
+          <Image
+            src="/agencer-logo.png"
+            alt="Agencer"
+            width={120}
+            height={120}
+            className="logo-rotate"
+            priority
+          />
         </motion.div>
 
         {/* Headline */}
@@ -89,7 +114,7 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.2, ease: "easeOut" }}
         >
-          <Button variant="solid" size="lg" href="#">
+          <Button variant="outline" size="lg" href="#">
             Get Started Free
           </Button>
         </motion.div>

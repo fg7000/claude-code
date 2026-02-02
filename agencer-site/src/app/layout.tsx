@@ -4,6 +4,8 @@ import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { VoiceWidget } from "@/components/voice/VoiceWidget";
+import { BlueWave } from "@/components/animations/BlueWave";
+import { FloatingDots } from "@/components/animations/FloatingDots";
 
 export const metadata: Metadata = {
   title: "Agencer - Every AI. Every tool. One voice.",
@@ -44,6 +46,10 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <SmoothScrollProvider>
+          {/* Global background effects */}
+          <BlueWave intensity="normal" />
+          <FloatingDots count={20} />
+
           <Navbar />
           <main>
             {children}

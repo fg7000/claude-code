@@ -19,13 +19,13 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
     ref
   ) {
     const baseStyles =
-      "inline-flex items-center justify-center font-sans font-medium rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-gold focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary";
+      "inline-flex items-center justify-center font-sans font-medium rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-wave focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary";
 
     const variants = {
       solid:
-        "bg-accent-gold text-bg-primary hover:bg-accent-gold-hover active:scale-[0.98]",
+        "bg-accent-warm text-bg-primary hover:bg-accent-warm-hover active:scale-[0.98]",
       outline:
-        "border border-accent-gold text-accent-gold hover:bg-accent-gold/10 active:scale-[0.98]",
+        "border border-accent-warm text-accent-warm hover:bg-accent-warm/10 active:scale-[0.98]",
     };
 
     const sizes = {

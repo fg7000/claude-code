@@ -1,29 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  /* Background colors */
+  /* Backgrounds */
   --bg-primary: #0A0A0A;
-  --bg-secondary: #111111;
-  --bg-tertiary: #1A1A1A;
+  --bg-secondary: #0E0E12;
+  --bg-tertiary: #14141A;
 
-  /* Text colors */
+  /* Text */
   --text-primary: #F0EDE6;
   --text-secondary: #A8A29E;
   --text-headline: #FFFFFF;
 
-  /* Accent colors */
-  --accent-gold: #D4A853;
-  --accent-gold-hover: #E8C276;
+  /* Agencer Logo Spectrum (used for floating dots and accents) */
+  --logo-amber: #E8A838;
+  --logo-copper: #D4724A;
+  --logo-rose: #C75577;
+  --logo-violet: #8B5CF6;
+  --logo-indigo: #6366F1;
+  --logo-blue: #3B82F6;
+  --logo-teal: #14B8A6;
 
-  /* Glass morphism */
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.10);
+  /* Primary Accent: the blue wave from the orchestra video */
+  --accent-wave: #4A7BF7;
+  --accent-wave-glow: rgba(74, 123, 247, 0.15);
+
+  /* Secondary Accent: warm amber from logo (used sparingly for CTAs and section labels) */
+  --accent-warm: #E8A838;
+  --accent-warm-hover: #F0B84A;
+
+  /* Glass panels */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --glass-blur: 20px;
-
-  /* Gradient colors */
-  --gradient-start: #D4A853;
-  --gradient-mid: #C76B4A;
-  --gradient-end: #6B3FA0;
 }
 
 @theme inline {
@@ -33,10 +41,18 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-headline: var(--text-headline);
-  --color-accent-gold: var(--accent-gold);
-  --color-accent-gold-hover: var(--accent-gold-hover);
+  --color-accent-wave: var(--accent-wave);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-warm-hover: var(--accent-warm-hover);
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
+  --color-logo-amber: var(--logo-amber);
+  --color-logo-copper: var(--logo-copper);
+  --color-logo-rose: var(--logo-rose);
+  --color-logo-violet: var(--logo-violet);
+  --color-logo-indigo: var(--logo-indigo);
+  --color-logo-blue: var(--logo-blue);
+  --color-logo-teal: var(--logo-teal);
   --font-serif: "Cormorant Garamond", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -102,90 +118,88 @@ html.lenis, html.lenis body {
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
+/* Glass panel with blue glow (highlighted) */
+.glass-panel-highlighted {
+  background: var(--glass-bg);
+  border: 1px solid var(--accent-wave);
+  border-radius: 16px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 0 30px var(--accent-wave-glow);
+}
+
 /* Section label */
 .section-label {
   font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: var(--accent-gold);
+  color: var(--accent-warm);
 }
 
-/* Animated gradient border */
-@keyframes gradient-rotate {
-  0% {
-    --gradient-angle: 0deg;
+/* Logo rotation animation */
+@keyframes logo-rotate {
+  from {
+    transform: rotate(0deg);
   }
-  100% {
-    --gradient-angle: 360deg;
+  to {
+    transform: rotate(360deg);
   }
 }
 
-@property --gradient-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
+.logo-rotate {
+  animation: logo-rotate 30s linear infinite;
 }
 
-.gradient-border {
-  background: conic-gradient(from var(--gradient-angle), var(--gradient-start), var(--gradient-mid), var(--gradient-end), var(--gradient-start));
-  animation: gradient-rotate 4s linear infinite;
-}
-
-/* Animated gradient background blobs */
-@keyframes blob-move-1 {
+/* Floating dots animations */
+@keyframes float-1 {
   0%, 100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0);
   }
   25% {
-    transform: translate(30px, -50px) scale(1.1);
+    transform: translate(10px, -15px);
   }
   50% {
-    transform: translate(-20px, 20px) scale(0.9);
+    transform: translate(-5px, 10px);
   }
   75% {
-    transform: translate(50px, 50px) scale(1.05);
+    transform: translate(15px, 5px);
   }
 }
 
-@keyframes blob-move-2 {
+@keyframes float-2 {
   0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  25% {
-    transform: translate(-40px, 30px) scale(0.95);
-  }
-  50% {
-    transform: translate(50px, -40px) scale(1.1);
-  }
-  75% {
-    transform: translate(-30px, -30px) scale(1);
-  }
-}
-
-@keyframes blob-move-3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0);
   }
   33% {
-    transform: translate(40px, 40px) scale(1.05);
+    transform: translate(-12px, 8px);
   }
   66% {
-    transform: translate(-50px, 20px) scale(0.95);
+    transform: translate(8px, -12px);
   }
 }
 
-.blob-1 {
-  animation: blob-move-1 25s ease-in-out infinite;
+@keyframes float-3 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(8px, 12px);
+  }
+  40% {
+    transform: translate(-10px, -5px);
+  }
+  60% {
+    transform: translate(5px, -10px);
+  }
+  80% {
+    transform: translate(-8px, 8px);
+  }
 }
 
-.blob-2 {
-  animation: blob-move-2 30s ease-in-out infinite;
-}
-
-.blob-3 {
-  animation: blob-move-3 35s ease-in-out infinite;
-}
+.float-1 { animation: float-1 20s ease-in-out infinite; }
+.float-2 { animation: float-2 25s ease-in-out infinite; }
+.float-3 { animation: float-3 30s ease-in-out infinite; }
 
 /* Pulse animation */
 @keyframes pulse-subtle {
@@ -252,18 +266,6 @@ html.lenis, html.lenis body {
   animation: marquee-right 60s linear infinite;
 }
 
-/* Voice visualization pulse */
-@keyframes voice-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.4;
-  }
-}
-
 /* Constellation animation */
 @keyframes twinkle {
   0%, 100% {
@@ -284,15 +286,29 @@ html.lenis, html.lenis body {
   }
 }
 
+/* Blue wave pulse */
+@keyframes wave-pulse {
+  0%, 100% {
+    opacity: 0.08;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.wave-pulse {
+  animation: wave-pulse 8s ease-in-out infinite;
+}
+
 /* Focus styles */
 *:focus-visible {
-  outline: 2px solid var(--accent-gold);
+  outline: 2px solid var(--accent-wave);
   outline-offset: 2px;
 }
 
 /* Selection */
 ::selection {
-  background: rgba(212, 168, 83, 0.3);
+  background: rgba(74, 123, 247, 0.3);
   color: var(--text-headline);
 }
 
@@ -307,12 +323,13 @@ html.lenis, html.lenis body {
     scroll-behavior: auto !important;
   }
 
-  .blob-1, .blob-2, .blob-3,
+  .logo-rotate,
+  .float-1, .float-2, .float-3,
   .pulse-subtle,
   .scroll-indicator-dot,
   .marquee-left, .marquee-right,
   .marquee-left-slow, .marquee-right-slow,
-  .gradient-border {
+  .wave-pulse {
     animation: none !important;
   }
 }
