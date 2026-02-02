@@ -33,9 +33,8 @@ interface AgencerLogoProps {
 function AgencerLogo({ size = 40, bladeOpacities, ringScale, ringGlow }: AgencerLogoProps) {
   const centerX = size / 2;
   const centerY = size / 2;
-  const outerRadius = size * 0.45;
-  const innerRadius = size * 0.15;
-  const bladeLength = outerRadius - innerRadius;
+  const outerRadius = size * 0.42;
+  const innerRadius = size * 0.12;
 
   return (
     <svg
@@ -54,45 +53,57 @@ function AgencerLogo({ size = 40, bladeOpacities, ringScale, ringGlow }: Agencer
         cy={centerY}
         r={outerRadius}
         fill="none"
-        stroke="rgba(255, 255, 255, 0.15)"
-        strokeWidth={size * 0.04}
+        stroke="rgba(255, 255, 255, 0.2)"
+        strokeWidth={size * 0.03}
       />
 
-      {/* Inner blades - colorful spiral elements */}
+      {/* Inner blades - colorful petal/wedge elements */}
       {BLADE_COLORS.map((color, index) => {
-        const angle = (index / BLADE_COLORS.length) * Math.PI * 2 - Math.PI / 2;
-        const startX = centerX + Math.cos(angle) * innerRadius;
-        const startY = centerY + Math.sin(angle) * innerRadius;
-        const endX = centerX + Math.cos(angle) * (innerRadius + bladeLength * 0.7);
-        const endY = centerY + Math.sin(angle) * (innerRadius + bladeLength * 0.7);
+        const totalBlades = BLADE_COLORS.length;
+        const anglePerBlade = (Math.PI * 2) / totalBlades;
+        const startAngle = (index / totalBlades) * Math.PI * 2 - Math.PI / 2;
+        const endAngle = startAngle + anglePerBlade * 0.7; // 70% of the segment width
 
-        // Create a blade shape (tapered from center outward)
-        const bladeWidth = size * 0.08;
-        const perpAngle = angle + Math.PI / 2;
-        const perpX = Math.cos(perpAngle) * bladeWidth / 2;
-        const perpY = Math.sin(perpAngle) * bladeWidth / 2;
+        // Create a wedge/petal shape from center outward
+        const innerR = innerRadius;
+        const outerR = outerRadius * 0.85;
+
+        // Start point (inner arc start)
+        const x1 = centerX + Math.cos(startAngle) * innerR;
+        const y1 = centerY + Math.sin(startAngle) * innerR;
+
+        // Inner arc end
+        const x2 = centerX + Math.cos(endAngle) * innerR;
+        const y2 = centerY + Math.sin(endAngle) * innerR;
+
+        // Outer arc start
+        const x3 = centerX + Math.cos(endAngle) * outerR;
+        const y3 = centerY + Math.sin(endAngle) * outerR;
+
+        // Outer arc end
+        const x4 = centerX + Math.cos(startAngle) * outerR;
+        const y4 = centerY + Math.sin(startAngle) * outerR;
 
         const opacity = bladeOpacities[index] ?? 0.4;
-        const glowAmount = opacity > 0.6 ? (opacity - 0.4) * 15 : 0;
+        const glowAmount = opacity > 0.6 ? (opacity - 0.4) * 20 : 0;
 
         return (
-          <g key={index}>
-            <path
-              d={`
-                M ${startX - perpX * 0.3} ${startY - perpY * 0.3}
-                L ${endX - perpX * 0.1} ${endY - perpY * 0.1}
-                L ${endX + perpX * 0.1} ${endY + perpY * 0.1}
-                L ${startX + perpX * 0.3} ${startY + perpY * 0.3}
-                Z
-              `}
-              fill={color}
-              style={{
-                opacity,
-                filter: glowAmount > 0 ? `drop-shadow(0 0 ${glowAmount}px ${color})` : undefined,
-                transition: "opacity 0.1s ease-out",
-              }}
-            />
-          </g>
+          <path
+            key={index}
+            d={`
+              M ${x1} ${y1}
+              A ${innerR} ${innerR} 0 0 1 ${x2} ${y2}
+              L ${x3} ${y3}
+              A ${outerR} ${outerR} 0 0 0 ${x4} ${y4}
+              Z
+            `}
+            fill={color}
+            style={{
+              opacity,
+              filter: glowAmount > 0 ? `drop-shadow(0 0 ${glowAmount}px ${color})` : undefined,
+              transition: "opacity 0.15s ease-out",
+            }}
+          />
         );
       })}
 
@@ -100,8 +111,8 @@ function AgencerLogo({ size = 40, bladeOpacities, ringScale, ringGlow }: Agencer
       <circle
         cx={centerX}
         cy={centerY}
-        r={innerRadius * 0.6}
-        fill="rgba(255, 255, 255, 0.8)"
+        r={innerRadius * 0.7}
+        fill="rgba(255, 255, 255, 0.9)"
       />
     </svg>
   );
@@ -124,11 +135,15 @@ function SpeechBubble({ words, currentWordIndex, isVisible, showMicIcon }: Speec
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.4 }}
-          className="absolute bottom-full mb-4 right-0 md:right-auto md:left-auto"
-          style={{ maxWidth: "min(320px, calc(100vw - 48px))" }}
+          className="absolute bottom-full mb-4"
+          style={{
+            right: 0,
+            width: "280px",
+            maxWidth: "calc(100vw - 80px)",
+          }}
         >
           <div
-            className="relative px-5 py-4 rounded-xl"
+            className="relative px-4 py-3 rounded-xl"
             style={{
               background: "rgba(255, 255, 255, 0.05)",
               border: "1px solid rgba(255, 255, 255, 0.08)",
@@ -136,7 +151,7 @@ function SpeechBubble({ words, currentWordIndex, isVisible, showMicIcon }: Speec
               WebkitBackdropFilter: "blur(12px)",
             }}
           >
-            <p className="text-[0.95rem] leading-relaxed" style={{ color: "rgba(255, 255, 255, 0.85)" }}>
+            <p className="text-[0.9rem] leading-relaxed" style={{ color: "rgba(255, 255, 255, 0.85)" }}>
               {words.slice(0, currentWordIndex + 1).map((word, idx) => {
                 const isMicWord = showMicIcon && word === "mic";
                 return (
@@ -151,7 +166,7 @@ function SpeechBubble({ words, currentWordIndex, isVisible, showMicIcon }: Speec
                     {isMicWord && (
                       <MicOff
                         className="inline-block mx-1 animate-pulse"
-                        size={16}
+                        size={14}
                         style={{ color: "var(--accent-warm)" }}
                       />
                     )}
@@ -163,7 +178,7 @@ function SpeechBubble({ words, currentWordIndex, isVisible, showMicIcon }: Speec
 
             {/* Caret pointing to widget */}
             <div
-              className="absolute -bottom-2 right-6 w-4 h-4 rotate-45"
+              className="absolute -bottom-2 right-5 w-3 h-3 rotate-45"
               style={{
                 background: "rgba(255, 255, 255, 0.05)",
                 borderRight: "1px solid rgba(255, 255, 255, 0.08)",
