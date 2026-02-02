@@ -82,7 +82,7 @@ const securityBlocks = [
   {
     icon: icons.brain,
     heading: "Your memory is the key.",
-    body: "For sensitive actions, Agencer doesn't ask for a password you set three years ago. It asks you something only you would know from your own recent conversations. Your interaction history becomes your authentication layer. An attacker who hijacks your session can't answer. We call this Bio-Cognitive Biometric authentication, a proprietary technology that gets stronger the more you use Agencer.",
+    body: "For sensitive actions, Agencer doesn't ask for a password you set three years ago. It asks you something only you would know from your own recent conversations. Your interaction history becomes your authentication layer. An attacker who hijacks your session can't answer. We call this Cognitive Biometric Identification, a proprietary technology that gets stronger the more you use Agencer.",
   },
 ];
 
