@@ -1,0 +1,378 @@
+@import "tailwindcss";
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #0A0A0A;
+  --bg-secondary: #0E0E12;
+  --bg-tertiary: #14141A;
+
+  /* Text */
+  --text-primary: #F0EDE6;
+  --text-secondary: #A8A29E;
+  --text-headline: #FFFFFF;
+
+  /* Agencer Logo Spectrum (used for floating dots and accents) */
+  --logo-amber: #E8A838;
+  --logo-copper: #D4724A;
+  --logo-rose: #C75577;
+  --logo-violet: #8B5CF6;
+  --logo-indigo: #6366F1;
+  --logo-blue: #3B82F6;
+  --logo-teal: #14B8A6;
+
+  /* Primary Accent: the blue wave from the orchestra video */
+  --accent-wave: #4A7BF7;
+  --accent-wave-glow: rgba(74, 123, 247, 0.15);
+
+  /* Secondary Accent: warm amber from logo (used sparingly for CTAs and section labels) */
+  --accent-warm: #E8A838;
+  --accent-warm-hover: #F0B84A;
+
+  /* Glass panels */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 20px;
+}
+
+@theme inline {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-headline: var(--text-headline);
+  --color-accent-wave: var(--accent-wave);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-warm-hover: var(--accent-warm-hover);
+  --color-accent-gold: var(--accent-warm);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-logo-amber: var(--logo-amber);
+  --color-logo-copper: var(--logo-copper);
+  --color-logo-rose: var(--logo-rose);
+  --color-logo-violet: var(--logo-violet);
+  --color-logo-indigo: var(--logo-indigo);
+  --color-logo-blue: var(--logo-blue);
+  --color-logo-teal: var(--logo-teal);
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-weight: 300;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* Lenis smooth scroll */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Typography utilities */
+.font-serif {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+.font-sans {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Glass panel */
+.glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+/* Glass panel with blue glow (highlighted) */
+.glass-panel-highlighted {
+  background: var(--glass-bg);
+  border: 1px solid var(--accent-wave);
+  border-radius: 16px;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 0 30px var(--accent-wave-glow);
+}
+
+/* Section label */
+.section-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--accent-warm);
+}
+
+/* Logo rotation animation */
+@keyframes logo-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.logo-rotate {
+  animation: logo-rotate 30s linear infinite;
+}
+
+/* Slow spin animation for logo */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* Floating dots animations */
+@keyframes float-1 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(10px, -15px);
+  }
+  50% {
+    transform: translate(-5px, 10px);
+  }
+  75% {
+    transform: translate(15px, 5px);
+  }
+}
+
+@keyframes float-2 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-12px, 8px);
+  }
+  66% {
+    transform: translate(8px, -12px);
+  }
+}
+
+@keyframes float-3 {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(8px, 12px);
+  }
+  40% {
+    transform: translate(-10px, -5px);
+  }
+  60% {
+    transform: translate(5px, -10px);
+  }
+  80% {
+    transform: translate(-8px, 8px);
+  }
+}
+
+.float-1 { animation: float-1 20s ease-in-out infinite; }
+.float-2 { animation: float-2 25s ease-in-out infinite; }
+.float-3 { animation: float-3 30s ease-in-out infinite; }
+
+/* Pulse animation */
+@keyframes pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+/* Scroll indicator animation */
+@keyframes scroll-indicator {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+}
+
+.scroll-indicator-dot {
+  animation: scroll-indicator 1.5s ease-in-out infinite;
+}
+
+/* Marquee animation */
+@keyframes marquee-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.marquee-left {
+  animation: marquee-left 40s linear infinite;
+}
+
+.marquee-right {
+  animation: marquee-right 40s linear infinite;
+}
+
+.marquee-left-slow {
+  animation: marquee-left 60s linear infinite;
+}
+
+.marquee-right-slow {
+  animation: marquee-right 60s linear infinite;
+}
+
+/* Constellation animation */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Line draw animation */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Blue wave pulse */
+@keyframes wave-pulse {
+  0%, 100% {
+    opacity: 0.08;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.wave-pulse {
+  animation: wave-pulse 8s ease-in-out infinite;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--accent-wave);
+  outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(74, 123, 247, 0.3);
+  color: var(--text-headline);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .logo-rotate,
+  .float-1, .float-2, .float-3,
+  .pulse-subtle,
+  .scroll-indicator-dot,
+  .marquee-left, .marquee-right,
+  .marquee-left-slow, .marquee-right-slow,
+  .wave-pulse {
+    animation: none !important;
+  }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
