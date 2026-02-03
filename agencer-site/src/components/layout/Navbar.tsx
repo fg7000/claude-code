@@ -51,11 +51,11 @@ export function Navbar() {
           {/* Logo */}
           <a href="#" className="flex items-center gap-3 group">
             <Image
-              src="/agencer-logo.png"
+              src="/AgencerLogoSvg3.svg"
               alt="Agencer"
               width={32}
               height={32}
-              className="w-8 h-8"
+              className="w-8 h-8 animate-spin-slow"
             />
             <span className="font-serif text-xl text-text-headline tracking-wide">
               Agencer
@@ -108,14 +108,14 @@ export function Navbar() {
               <div className="flex items-center justify-between mb-12">
                 <a href="#" className="flex items-center gap-3">
                   <Image
-                    src="/agencer-logo.png"
+                    src="/AgencerLogoSvg3.svg"
                     alt="Agencer"
                     width={32}
                     height={32}
-                    className="w-8 h-8"
+                    className="w-8 h-8 animate-spin-slow"
                   />
                   <span className="font-serif text-xl text-text-headline tracking-wide">
-                    agencer
+                    Agencer
                   </span>
                 </a>
                 <button

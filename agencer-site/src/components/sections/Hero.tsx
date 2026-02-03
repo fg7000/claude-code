@@ -69,19 +69,21 @@ export function Hero() {
         ref={contentRef}
         className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto"
       >
-        {/* Logo with rotation */}
+        {/* Logo with rotation and glow */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-          className="mb-6"
+          className="mb-6 relative"
         >
+          {/* Glow effect behind logo */}
+          <div className="absolute inset-0 logo-glow" />
           <Image
-            src="/agencer-logo.png"
+            src="/AgencerLogoSvg3.svg"
             alt="Agencer"
-            width={120}
-            height={120}
-            className="logo-rotate"
+            width={140}
+            height={140}
+            className="logo-rotate relative z-10"
             priority
           />
         </motion.div>

@@ -152,6 +152,32 @@ html.lenis, html.lenis body {
   animation: logo-rotate 30s linear infinite;
 }
 
+/* Logo glow effect */
+@keyframes logo-glow-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.logo-glow {
+  background: radial-gradient(
+    circle,
+    var(--logo-amber) 0%,
+    var(--logo-copper) 20%,
+    var(--logo-rose) 40%,
+    var(--logo-violet) 60%,
+    transparent 70%
+  );
+  filter: blur(30px);
+  animation: logo-glow-pulse 4s ease-in-out infinite;
+  border-radius: 50%;
+}
+
 /* Slow spin animation for logo */
 @keyframes spin-slow {
   from {
@@ -339,6 +365,7 @@ html.lenis, html.lenis body {
   }
 
   .logo-rotate,
+  .logo-glow,
   .float-1, .float-2, .float-3,
   .pulse-subtle,
   .scroll-indicator-dot,
