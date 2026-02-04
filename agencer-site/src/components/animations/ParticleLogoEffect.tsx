@@ -175,7 +175,11 @@ export function ParticleLogoEffect({
     const ringRadius = size * 0.47;
     const centerHoleRadius = size * 0.05;
 
+    let frameCount = 0;
+
     const animate = () => {
+      try {
+      frameCount++;
       timeRef.current += 0.016;
       const time = timeRef.current;
       const particles = particlesRef.current;
@@ -330,9 +334,13 @@ export function ParticleLogoEffect({
         }
       }
 
+      } catch (error) {
+        console.error('Animation error:', error);
+      }
       animationRef.current = requestAnimationFrame(animate);
     };
 
+    console.log('ParticleLogoEffect: Animation started');
     animate();
 
     return () => cancelAnimationFrame(animationRef.current);
