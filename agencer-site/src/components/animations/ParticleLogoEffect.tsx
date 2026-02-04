@@ -17,6 +17,8 @@ interface Particle {
   noiseOffsetX: number;
   noiseOffsetY: number;
   speed: number;
+  // Distance from center for center-hole effect
+  distFromCenter: number;
 }
 
 interface ParticleLogoEffectProps {
@@ -41,6 +43,7 @@ export function ParticleLogoEffect({
   const isInitializedRef = useRef(false);
   const smoothedAmplitudeRef = useRef(0);
   const logoImageRef = useRef<HTMLImageElement | null>(null);
+  const timeRef = useRef(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
@@ -107,24 +110,26 @@ export function ParticleLogoEffect({
       }
     }
 
-    // Target 50000 particles for stipple effect
-    const targetCount = 50000;
+    // Target 80000 particles for ultra-fine stipple effect like in video
+    const targetCount = 80000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
       const pos = allPositions[i];
+      const distFromCenter = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
       particles.push({
         x: pos.x,
         y: pos.y,
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 0.4 + Math.random() * 0.3, // Very small particles
+        size: 0.3 + Math.random() * 0.25, // Even smaller particles
         vx: 0,
         vy: 0,
         noiseOffsetX: Math.random() * 1000,
         noiseOffsetY: Math.random() * 1000,
-        speed: 0.5 + Math.random() * 1.5,
+        speed: 0.3 + Math.random() * 1.2,
+        distFromCenter,
       });
     }
 
@@ -152,81 +157,111 @@ export function ParticleLogoEffect({
 
     const centerX = size / 2;
     const centerY = size / 2;
-    const ringRadius = size * 0.42;
+    const ringRadius = size * 0.44;
+    const centerHoleRadius = size * 0.08; // Preserve center hole like in video
 
     const animate = () => {
-      const time = Date.now() * 0.001;
+      timeRef.current += 0.016; // ~60fps increment
+      const time = timeRef.current;
       const particles = particlesRef.current;
 
       // Smooth amplitude with faster response
       const targetAmplitude = audioData.amplitude;
-      smoothedAmplitudeRef.current += (targetAmplitude - smoothedAmplitudeRef.current) * 0.12;
+      smoothedAmplitudeRef.current += (targetAmplitude - smoothedAmplitudeRef.current) * 0.15;
       const amplitude = smoothedAmplitudeRef.current;
 
       // Determine dispersion amount (0 = solid logo, 1 = fully dispersed)
-      const dispersion = Math.min(1, amplitude * 3);
+      const dispersion = Math.min(1, amplitude * 4);
 
       // Clear canvas
       ctx.clearRect(0, 0, size, size);
 
-      // Draw rainbow ring (always visible)
+      // Draw rainbow ring with subtle wobble animation (like in video)
       ctx.save();
       ctx.beginPath();
-      ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+
+      // Create slightly wobbly ring path
+      const wobbleAmount = 2 + amplitude * 3;
+      const wobbleFreq = 8;
+      for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
+        const wobble = Math.sin(angle * wobbleFreq + time * 2) * wobbleAmount * 0.3;
+        const r = ringRadius + wobble;
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
+        if (angle === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+
+      // Brighter, more vibrant rainbow gradient like in video
       const ringGradient = ctx.createConicGradient(0, centerX, centerY);
-      ringGradient.addColorStop(0, "rgba(0, 200, 255, 0.6)");
-      ringGradient.addColorStop(0.15, "rgba(0, 255, 100, 0.6)");
-      ringGradient.addColorStop(0.3, "rgba(255, 255, 0, 0.6)");
-      ringGradient.addColorStop(0.45, "rgba(255, 150, 0, 0.6)");
-      ringGradient.addColorStop(0.6, "rgba(255, 50, 100, 0.6)");
-      ringGradient.addColorStop(0.75, "rgba(200, 0, 255, 0.6)");
-      ringGradient.addColorStop(0.9, "rgba(100, 0, 255, 0.6)");
-      ringGradient.addColorStop(1, "rgba(0, 200, 255, 0.6)");
+      ringGradient.addColorStop(0, "rgba(0, 200, 255, 0.85)");
+      ringGradient.addColorStop(0.12, "rgba(0, 100, 255, 0.85)");
+      ringGradient.addColorStop(0.25, "rgba(100, 0, 255, 0.85)");
+      ringGradient.addColorStop(0.37, "rgba(255, 0, 200, 0.85)");
+      ringGradient.addColorStop(0.5, "rgba(255, 0, 100, 0.85)");
+      ringGradient.addColorStop(0.62, "rgba(255, 150, 0, 0.85)");
+      ringGradient.addColorStop(0.75, "rgba(255, 255, 0, 0.85)");
+      ringGradient.addColorStop(0.87, "rgba(0, 255, 100, 0.85)");
+      ringGradient.addColorStop(1, "rgba(0, 200, 255, 0.85)");
       ctx.strokeStyle = ringGradient;
-      ctx.lineWidth = 2 + amplitude * 2;
+      ctx.lineWidth = 3 + amplitude * 2;
       ctx.stroke();
       ctx.restore();
 
-      // If no audio, draw solid logo
-      if (dispersion < 0.05) {
-        const logoSize = size * 0.75;
+      // If no/low audio, draw solid logo
+      if (dispersion < 0.08) {
+        const logoSize = size * 0.78;
         const logoOffset = (size - logoSize) / 2;
-        ctx.globalAlpha = 1 - dispersion * 20;
+        ctx.globalAlpha = 1 - dispersion * 12;
         ctx.drawImage(logoImg, logoOffset, logoOffset, logoSize, logoSize);
         ctx.globalAlpha = 1;
       }
 
       // Draw particles (more visible as dispersion increases)
-      if (dispersion > 0.02) {
-        const particleAlpha = Math.min(1, dispersion * 2);
+      if (dispersion > 0.03) {
+        const particleAlpha = Math.min(1, dispersion * 1.8);
 
         for (const p of particles) {
           // Calculate chaotic displacement based on noise
           const noiseX = noise(p.noiseOffsetX, p.noiseOffsetY, time * p.speed);
           const noiseY = noise(p.noiseOffsetY, p.noiseOffsetX, time * p.speed * 1.1);
 
-          // Max displacement increases with amplitude
-          const maxDisp = dispersion * 35;
+          // Max displacement increases with amplitude - stronger effect
+          const maxDisp = dispersion * 45;
 
           // Target position with chaotic offset
           const targetX = p.baseX + noiseX * maxDisp;
           const targetY = p.baseY + noiseY * maxDisp;
 
           // Smooth movement toward target
-          p.vx += (targetX - p.x) * 0.08;
-          p.vy += (targetY - p.y) * 0.08;
-          p.vx *= 0.92;
-          p.vy *= 0.92;
+          p.vx += (targetX - p.x) * 0.1;
+          p.vy += (targetY - p.y) * 0.1;
+          p.vx *= 0.9;
+          p.vy *= 0.9;
 
           p.x = p.baseX + p.vx * dispersion;
           p.y = p.baseY + p.vy * dispersion;
 
           // Constrain within ring
           const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
-          if (distFromCenter > ringRadius - 10) {
+          const maxDist = ringRadius - 8;
+
+          if (distFromCenter > maxDist) {
             const angle = Math.atan2(p.y, p.x);
-            p.x = Math.cos(angle) * (ringRadius - 10);
-            p.y = Math.sin(angle) * (ringRadius - 10);
+            p.x = Math.cos(angle) * maxDist;
+            p.y = Math.sin(angle) * maxDist;
+          }
+
+          // Preserve center hole (push particles away from center when dispersed)
+          if (distFromCenter < centerHoleRadius && dispersion > 0.2) {
+            const angle = Math.atan2(p.y, p.x);
+            const pushFactor = (1 - distFromCenter / centerHoleRadius) * dispersion;
+            p.x += Math.cos(angle) * pushFactor * 15;
+            p.y += Math.sin(angle) * pushFactor * 15;
           }
 
           // Draw particle
