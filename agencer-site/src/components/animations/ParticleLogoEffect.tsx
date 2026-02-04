@@ -243,8 +243,13 @@ export function ParticleLogoEffect({
       ctx.stroke();
       ctx.restore();
 
-      // Draw solid logo when amplitude is very low (fades based on amplitude)
-      const logoOpacity = Math.max(0, 1 - amplitude * 8);
+      // Draw solid logo when amplitude is low
+      // Threshold below which logo is fully visible
+      const logoThreshold = 0.08;
+      const logoOpacity = amplitude < logoThreshold
+        ? 1
+        : Math.max(0, 1 - (amplitude - logoThreshold) * 5);
+
       if (logoOpacity > 0.01) {
         const logoSize = size * 0.70;
         const logoOffset = (size - logoSize) / 2;
@@ -253,55 +258,58 @@ export function ParticleLogoEffect({
         ctx.globalAlpha = 1;
       }
 
-      // Draw particles - always visible, intensity varies with amplitude
-      const particleOpacity = Math.min(1, 0.3 + amplitude * 3);
+      // Draw particles ONLY when amplitude is above threshold
+      if (amplitude > logoThreshold) {
+        // Particle opacity ramps up as amplitude increases
+        const particleOpacity = Math.min(1, (amplitude - logoThreshold) * 5);
 
-      for (const p of particles) {
-        // Get 3D noise displacement
-        const noiseResult = noise3D(
-          p.noiseOffsetX + p.baseX,
-          p.noiseOffsetY + p.baseY,
-          p.noiseOffsetZ,
-          time * 0.8
-        );
+        for (const p of particles) {
+          // Get 3D noise displacement
+          const noiseResult = noise3D(
+            p.noiseOffsetX + p.baseX,
+            p.noiseOffsetY + p.baseY,
+            p.noiseOffsetZ,
+            time * 0.8
+          );
 
-        // Apply noise displacement modulated by amplitude
-        const dx = noiseResult.x * noiseStrength;
-        const dy = noiseResult.y * noiseStrength;
-        p.z = noiseResult.z * noiseStrength * 0.5; // Z for size variation
+          // Apply noise displacement modulated by amplitude
+          const dx = noiseResult.x * noiseStrength;
+          const dy = noiseResult.y * noiseStrength;
+          p.z = noiseResult.z * noiseStrength * 0.5; // Z for size variation
 
-        // Calculate position with expansion
-        p.x = p.baseX * expansion + dx;
-        p.y = p.baseY * expansion + dy;
+          // Calculate position with expansion
+          p.x = p.baseX * expansion + dx;
+          p.y = p.baseY * expansion + dy;
 
-        // Soft boundary at ring
-        const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
-        const maxDist = ringRadius + amplitude * 30;
+          // Soft boundary at ring
+          const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
+          const maxDist = ringRadius + amplitude * 30;
 
-        if (distFromCenter > maxDist) {
-          const angle = Math.atan2(p.y, p.x);
-          const pushBack = (distFromCenter - maxDist) * 0.5;
-          p.x -= Math.cos(angle) * pushBack;
-          p.y -= Math.sin(angle) * pushBack;
+          if (distFromCenter > maxDist) {
+            const angle = Math.atan2(p.y, p.x);
+            const pushBack = (distFromCenter - maxDist) * 0.5;
+            p.x -= Math.cos(angle) * pushBack;
+            p.y -= Math.sin(angle) * pushBack;
+          }
+
+          // Center hole
+          if (distFromCenter < centerHoleRadius) {
+            const angle = Math.atan2(p.y, p.x);
+            const push = (centerHoleRadius - distFromCenter) * 0.8;
+            p.x += Math.cos(angle) * push;
+            p.y += Math.sin(angle) * push;
+          }
+
+          // Size varies with Z depth and amplitude
+          const depthScale = 1 + p.z * 0.02;
+          const drawSize = p.size * depthScale * (0.8 + amplitude * 0.4);
+
+          // Draw particle
+          ctx.beginPath();
+          ctx.arc(centerX + p.x, centerY + p.y, drawSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${particleOpacity})`;
+          ctx.fill();
         }
-
-        // Center hole
-        if (distFromCenter < centerHoleRadius) {
-          const angle = Math.atan2(p.y, p.x);
-          const push = (centerHoleRadius - distFromCenter) * 0.8;
-          p.x += Math.cos(angle) * push;
-          p.y += Math.sin(angle) * push;
-        }
-
-        // Size varies with Z depth and amplitude
-        const depthScale = 1 + p.z * 0.02;
-        const drawSize = p.size * depthScale * (0.8 + amplitude * 0.4);
-
-        // Draw particle
-        ctx.beginPath();
-        ctx.arc(centerX + p.x, centerY + p.y, drawSize, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${particleOpacity})`;
-        ctx.fill();
       }
 
       animationRef.current = requestAnimationFrame(animate);
