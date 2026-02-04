@@ -9,13 +9,9 @@ interface Particle {
   baseY: number;
   color: { r: number; g: number; b: number };
   size: number;
-  vx: number;
-  vy: number;
   noiseOffsetX: number;
   noiseOffsetY: number;
   speed: number;
-  angleFromCenter: number;
-  distFromCenter: number;
 }
 
 interface ParticleLogoProps {
@@ -36,21 +32,19 @@ export function ParticleLogo({
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>(0);
   const logoImageRef = useRef<HTMLImageElement | null>(null);
-  const smoothedAmplitudeRef = useRef(0);
   const timeRef = useRef(0);
+  const currentDispersionRef = useRef(0);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
 
-  // Multi-octave noise for chaotic motion
+  // Noise for chaotic motion
   const noise = useCallback((x: number, y: number, time: number): number => {
-    const n1 = Math.sin(x * 0.015 + time) * Math.cos(y * 0.015 + time * 0.7);
-    const n2 = Math.sin(x * 0.04 - time * 1.3) * Math.cos(y * 0.025 + time * 0.5);
-    const n3 = Math.sin(x * 0.08 + time * 0.9) * Math.cos(y * 0.06 - time * 0.4);
-    return n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
+    return Math.sin(x * 0.02 + time) * Math.cos(y * 0.02 + time * 0.7) +
+           Math.sin(x * 0.05 - time * 1.3) * Math.cos(y * 0.03 + time * 0.5);
   }, []);
 
-  // Initialize particles from logo
+  // Initialize particles
   const initParticles = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -62,7 +56,6 @@ export function ParticleLogo({
     if (!ctx) return;
     ctx.scale(dpr, dpr);
 
-    // Load the logo image
     const img = new Image();
     img.crossOrigin = "anonymous";
 
@@ -74,7 +67,6 @@ export function ParticleLogo({
 
     logoImageRef.current = img;
 
-    // Sample at high resolution
     const sampleSize = 800;
     const logoScale = 0.70;
     const scaleFactor = (size * logoScale) / sampleSize;
@@ -116,9 +108,6 @@ export function ParticleLogo({
 
     for (let i = 0; i < allPositions.length; i += step) {
       const pos = allPositions[i];
-      const distFromCenter = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
-      const angleFromCenter = Math.atan2(pos.y, pos.x);
-
       particles.push({
         x: pos.x,
         y: pos.y,
@@ -126,13 +115,9 @@ export function ParticleLogo({
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
         size: 0.3 + Math.random() * 0.25,
-        vx: 0,
-        vy: 0,
         noiseOffsetX: Math.random() * 1000,
         noiseOffsetY: Math.random() * 1000,
-        speed: 0.4 + Math.random() * 1.0,
-        angleFromCenter,
-        distFromCenter,
+        speed: 0.5 + Math.random() * 1.0,
       });
     }
 
@@ -155,17 +140,13 @@ export function ParticleLogo({
     const centerY = size / 2;
     const ringRadius = size * 0.47;
     const centerHoleRadius = size * 0.06;
-    const logoRadius = size * 0.35;
-
-    // Threshold for breaking into particles - low enough to trigger on speech
-    const BREAK_THRESHOLD = 0.08;
 
     const animate = () => {
       timeRef.current += 0.016;
       const time = timeRef.current;
       const particles = particlesRef.current;
 
-      // Calculate RAW amplitude from audio data (no minimum floor)
+      // Calculate amplitude DIRECTLY - no smoothing on attack
       let rawAmplitude = 0;
       if (isActive && audioData && audioData.length > 0) {
         let sum = 0;
@@ -175,36 +156,34 @@ export function ParticleLogo({
         rawAmplitude = sum / audioData.length / 255;
       }
 
-      // VERY FAST smoothing - instant response for heartbeat effect
-      const smoothingUp = 0.5;    // Very fast attack
-      const smoothingDown = 0.4;  // Very fast decay for snappy return
-
-      if (rawAmplitude > smoothedAmplitudeRef.current) {
-        smoothedAmplitudeRef.current += (rawAmplitude - smoothedAmplitudeRef.current) * smoothingUp;
-      } else {
-        smoothedAmplitudeRef.current += (rawAmplitude - smoothedAmplitudeRef.current) * smoothingDown;
-      }
-
-      const amplitude = smoothedAmplitudeRef.current;
-
-      // Dispersion based on amplitude - only when above threshold
-      // 0 = solid logo, 1 = fully dispersed particles
-      const dispersion = amplitude > BREAK_THRESHOLD
-        ? Math.min(1, (amplitude - BREAK_THRESHOLD) * 3)
+      // Target dispersion based on raw amplitude
+      // INSTANT on attack, fast decay on release
+      const threshold = 0.06;
+      const targetDispersion = rawAmplitude > threshold
+        ? Math.min(1, (rawAmplitude - threshold) * 4)
         : 0;
 
-      // Expansion factor for particles
+      // INSTANT attack, fast decay
+      if (targetDispersion > currentDispersionRef.current) {
+        // INSTANT - jump to target immediately
+        currentDispersionRef.current = targetDispersion;
+      } else {
+        // Fast decay back to zero
+        currentDispersionRef.current += (targetDispersion - currentDispersionRef.current) * 0.3;
+      }
+
+      const dispersion = currentDispersionRef.current;
       const expansionFactor = 1 + dispersion * 0.8;
 
       // Clear canvas
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      // Draw rainbow ring with wobble
+      // Draw rainbow ring
       ctx.save();
       ctx.beginPath();
 
-      const wobbleAmount = 1.5 + amplitude * 4;
+      const wobbleAmount = 1.5 + dispersion * 4;
       const wobbleFreq = 6;
       for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
         const wobble = Math.sin(angle * wobbleFreq + time * 2.5) * wobbleAmount;
@@ -230,96 +209,68 @@ export function ParticleLogo({
       ringGradient.addColorStop(0.87, "rgba(0, 255, 100, 0.9)");
       ringGradient.addColorStop(1, "rgba(0, 200, 255, 0.9)");
       ctx.strokeStyle = ringGradient;
-      ctx.lineWidth = 2.5 + amplitude * 2;
+      ctx.lineWidth = 2.5 + dispersion * 2;
       ctx.stroke();
       ctx.restore();
 
-      // SOLID LOGO when below threshold (dispersion near 0)
-      if (dispersion < 0.15) {
+      // SOLID LOGO when dispersion is low
+      if (dispersion < 0.2) {
         const logoSize = size * 0.70;
         const logoOffset = (size - logoSize) / 2;
-        // Fade out solid logo as dispersion increases
-        ctx.globalAlpha = 1 - (dispersion / 0.15);
+        ctx.globalAlpha = 1 - (dispersion / 0.2);
         ctx.drawImage(logoImg, logoOffset, logoOffset, logoSize, logoSize);
         ctx.globalAlpha = 1;
       }
 
-      // PARTICLES when above threshold
+      // PARTICLES when dispersion is high
       if (dispersion > 0.05) {
-        const particleAlpha = Math.min(1, dispersion * 3);
+        const particleAlpha = Math.min(1, dispersion * 4);
 
         for (const p of particles) {
-          // Chaotic displacement
+          // Calculate dispersed position directly (no velocity physics)
           const noiseX = noise(p.noiseOffsetX, p.noiseOffsetY, time * p.speed);
           const noiseY = noise(p.noiseOffsetY, p.noiseOffsetX, time * p.speed * 1.1);
 
-          const chaosAmount = dispersion * 55;
+          const chaosAmount = dispersion * 50;
 
-          // Target position with expansion and chaos
-          const expandedBaseX = p.baseX * expansionFactor;
-          const expandedBaseY = p.baseY * expansionFactor;
+          // Dispersed target
+          const dispersedX = p.baseX * expansionFactor + noiseX * chaosAmount;
+          const dispersedY = p.baseY * expansionFactor + noiseY * chaosAmount;
 
-          const targetX = expandedBaseX + noiseX * chaosAmount;
-          const targetY = expandedBaseY + noiseY * chaosAmount;
-
-          // FAST movement - snappy response
-          const moveSpeed = 0.15;
-          p.vx += (targetX - p.x) * moveSpeed;
-          p.vy += (targetY - p.y) * moveSpeed;
-          p.vx *= 0.85;
-          p.vy *= 0.85;
-
-          p.x += p.vx;
-          p.y += p.vy;
+          // DIRECT lerp - position is direct mix of base and dispersed
+          // This gives INSTANT response
+          p.x = p.baseX + (dispersedX - p.baseX) * dispersion;
+          p.y = p.baseY + (dispersedY - p.baseY) * dispersion;
 
           // Soft boundary
           const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
-          const softMaxDist = ringRadius + (amplitude > 0.5 ? (amplitude - 0.5) * 40 : 0);
+          const softMaxDist = ringRadius + dispersion * 20;
 
           if (distFromCenter > softMaxDist) {
             const angle = Math.atan2(p.y, p.x);
-            const overflow = distFromCenter - softMaxDist;
-            p.x -= Math.cos(angle) * overflow * 0.3;
-            p.y -= Math.sin(angle) * overflow * 0.3;
+            p.x = Math.cos(angle) * softMaxDist;
+            p.y = Math.sin(angle) * softMaxDist;
           }
 
           // Center hole
-          if (distFromCenter < centerHoleRadius) {
+          if (distFromCenter < centerHoleRadius && dispersion > 0.3) {
             const angle = Math.atan2(p.y, p.x);
-            const pushStrength = (1 - distFromCenter / centerHoleRadius) * 8;
-            p.x += Math.cos(angle) * pushStrength;
-            p.y += Math.sin(angle) * pushStrength;
+            const push = (1 - distFromCenter / centerHoleRadius) * dispersion * 10;
+            p.x += Math.cos(angle) * push;
+            p.y += Math.sin(angle) * push;
           }
 
-          // Draw particle
-          const drawX = centerX + p.x;
-          const drawY = centerY + p.y;
-
+          // Draw
           ctx.beginPath();
-          ctx.arc(drawX, drawY, p.size, 0, Math.PI * 2);
+          ctx.arc(centerX + p.x, centerY + p.y, p.size, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${particleAlpha})`;
           ctx.fill();
         }
       }
 
-      // When dispersion is low, INSTANTLY snap particles back to base
-      if (dispersion < 0.3) {
-        const returnSpeed = 0.35; // Very fast snap-back
-        for (const p of particles) {
-          p.x += (p.baseX - p.x) * returnSpeed;
-          p.y += (p.baseY - p.y) * returnSpeed;
-          p.vx *= 0.5; // Kill velocity quickly
-          p.vy *= 0.5;
-        }
-      }
-
-      // When not active at all, instant reset
+      // Reset when not active
       if (!isActive) {
-        smoothedAmplitudeRef.current *= 0.7; // Fast decay
-        for (const p of particles) {
-          p.x += (p.baseX - p.x) * 0.25;
-          p.y += (p.baseY - p.y) * 0.25;
-        }
+        currentDispersionRef.current *= 0.7;
       }
 
       animationRef.current = requestAnimationFrame(animate);
@@ -332,7 +283,6 @@ export function ParticleLogo({
     };
   }, [isInitialized, isActive, audioData, size, dpr, noise]);
 
-  // Initialize on mount
   useEffect(() => {
     initParticles();
   }, [initParticles]);
