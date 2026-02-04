@@ -5,26 +5,27 @@ import { useRef, useEffect, useState, useCallback } from "react";
 interface Particle {
   x: number;
   y: number;
-  homeX: number;
-  homeY: number;
-  color: string;
+  baseX: number;
+  baseY: number;
+  color: { r: number; g: number; b: number };
+  size: number;
   vx: number;
   vy: number;
-  size: number;
-  audioOffset: number; // Random offset for audio reactivity
+  noiseOffsetX: number;
+  noiseOffsetY: number;
+  speed: number;
 }
 
 interface ParticleLogoProps {
   size?: number;
   particleCount?: number;
-  isActive?: boolean; // When true, particles scatter and become audio-reactive
-  audioData?: Uint8Array | null; // Audio frequency data
+  isActive?: boolean;
+  audioData?: Uint8Array | null;
   className?: string;
 }
 
 export function ParticleLogo({
-  size = 140,
-  particleCount = 800,
+  size = 200,
   isActive = false,
   audioData = null,
   className = "",
@@ -32,15 +33,31 @@ export function ParticleLogo({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number>(0);
+  const logoImageRef = useRef<HTMLImageElement | null>(null);
+  const smoothedAmplitudeRef = useRef(0);
+  const timeRef = useRef(0);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+
+  // Simple noise function for chaotic motion
+  const noise = useCallback((x: number, y: number, time: number): number => {
+    return Math.sin(x * 0.02 + time) * Math.cos(y * 0.02 + time * 0.7) +
+           Math.sin(x * 0.05 - time * 1.3) * Math.cos(y * 0.03 + time * 0.5);
+  }, []);
 
   // Initialize particles from logo
   const initParticles = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext("2d");
+    // Set canvas size with device pixel ratio for crisp rendering
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
+    ctx.scale(dpr, dpr);
 
     // Load the logo image
     const img = new Image();
@@ -52,182 +69,217 @@ export function ParticleLogo({
       img.src = "/AgencerLogoSvg3.svg";
     });
 
-    // Create a temporary canvas to sample the image
+    logoImageRef.current = img;
+
+    // Sample at high resolution for accurate particle positions
+    const sampleSize = 800;
+    const scaleFactor = size / sampleSize;
+
     const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = size;
-    tempCanvas.height = size;
+    tempCanvas.width = sampleSize;
+    tempCanvas.height = sampleSize;
     const tempCtx = tempCanvas.getContext("2d");
     if (!tempCtx) return;
 
-    // Draw logo to temp canvas
-    tempCtx.drawImage(img, 0, 0, size, size);
-
-    // Sample pixels to create particles
-    const imageData = tempCtx.getImageData(0, 0, size, size);
+    tempCtx.drawImage(img, 0, 0, sampleSize, sampleSize);
+    const imageData = tempCtx.getImageData(0, 0, sampleSize, sampleSize);
     const pixels = imageData.data;
     const particles: Particle[] = [];
-    const sampledPositions: { x: number; y: number; color: string }[] = [];
 
-    // Collect all non-transparent pixels
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const i = (y * size + x) * 4;
+    const sampleCenterX = sampleSize / 2;
+    const sampleCenterY = sampleSize / 2;
+
+    // Collect all colored pixels
+    const allPositions: { x: number; y: number; r: number; g: number; b: number }[] = [];
+
+    for (let y = 0; y < sampleSize; y++) {
+      for (let x = 0; x < sampleSize; x++) {
+        const i = (y * sampleSize + x) * 4;
         const alpha = pixels[i + 3];
-
-        if (alpha > 50) {
-          const r = pixels[i];
-          const g = pixels[i + 1];
-          const b = pixels[i + 2];
-          sampledPositions.push({
-            x,
-            y,
-            color: `rgb(${r}, ${g}, ${b})`,
+        if (alpha > 30) {
+          allPositions.push({
+            x: (x - sampleCenterX) * scaleFactor,
+            y: (y - sampleCenterY) * scaleFactor,
+            r: pixels[i],
+            g: pixels[i + 1],
+            b: pixels[i + 2],
           });
         }
       }
     }
 
-    // Randomly select particles from sampled positions
-    const step = Math.max(1, Math.floor(sampledPositions.length / particleCount));
-    for (let i = 0; i < sampledPositions.length; i += step) {
-      if (particles.length >= particleCount) break;
+    // Target 80000 particles for ultra-fine stipple effect
+    const targetCount = 80000;
+    const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
-      const pos = sampledPositions[i];
+    for (let i = 0; i < allPositions.length; i += step) {
+      const pos = allPositions[i];
       particles.push({
         x: pos.x,
         y: pos.y,
-        homeX: pos.x,
-        homeY: pos.y,
-        color: pos.color,
+        baseX: pos.x,
+        baseY: pos.y,
+        color: { r: pos.r, g: pos.g, b: pos.b },
+        size: 0.3 + Math.random() * 0.25, // Very small particles
         vx: 0,
         vy: 0,
-        size: 1.5 + Math.random() * 1,
-        audioOffset: Math.random() * Math.PI * 2,
+        noiseOffsetX: Math.random() * 1000,
+        noiseOffsetY: Math.random() * 1000,
+        speed: 0.3 + Math.random() * 1.2,
       });
     }
 
     particlesRef.current = particles;
     setIsInitialized(true);
-  }, [size, particleCount]);
+  }, [size, dpr]);
 
   // Animation loop
   useEffect(() => {
     if (!isInitialized) return;
 
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const logoImg = logoImageRef.current;
+    if (!canvas || !logoImg) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const centerX = size / 2;
     const centerY = size / 2;
+    const ringRadius = size * 0.44;
+    const centerHoleRadius = size * 0.08;
 
     const animate = () => {
-      ctx.clearRect(0, 0, size, size);
-
+      timeRef.current += 0.016;
+      const time = timeRef.current;
       const particles = particlesRef.current;
-      const time = Date.now() * 0.001;
 
-      // Get average audio level if available
-      let audioLevel = 0;
-      let bassLevel = 0;
-      let midLevel = 0;
-      let highLevel = 0;
-
-      if (audioData && audioData.length > 0) {
-        // Bass (0-10), Mid (10-100), High (100+)
-        let bassSum = 0;
-        let midSum = 0;
-        let highSum = 0;
-        const bassEnd = Math.min(10, audioData.length);
-        const midEnd = Math.min(100, audioData.length);
-
-        for (let i = 0; i < bassEnd; i++) bassSum += audioData[i];
-        for (let i = bassEnd; i < midEnd; i++) midSum += audioData[i];
-        for (let i = midEnd; i < audioData.length; i++) highSum += audioData[i];
-
-        bassLevel = bassSum / bassEnd / 255;
-        midLevel = midSum / (midEnd - bassEnd) / 255;
-        highLevel = highSum / (audioData.length - midEnd) / 255;
-        audioLevel = (bassLevel + midLevel + highLevel) / 3;
+      // Calculate amplitude from audio data
+      let targetAmplitude = 0;
+      if (isActive && audioData && audioData.length > 0) {
+        let sum = 0;
+        for (let i = 0; i < audioData.length; i++) {
+          sum += audioData[i];
+        }
+        targetAmplitude = sum / audioData.length / 255;
       }
 
-      for (const particle of particles) {
-        if (isActive) {
-          // Scatter mode - particles move away from home and react to audio
-          const angleFromCenter = Math.atan2(
-            particle.homeY - centerY,
-            particle.homeX - centerX
-          );
-          const distFromCenter = Math.sqrt(
-            Math.pow(particle.homeX - centerX, 2) +
-            Math.pow(particle.homeY - centerY, 2)
-          );
+      // Smooth amplitude
+      smoothedAmplitudeRef.current += (targetAmplitude - smoothedAmplitudeRef.current) * 0.15;
+      const amplitude = isActive ? Math.max(0.3, smoothedAmplitudeRef.current) : smoothedAmplitudeRef.current;
 
-          // Base scatter position
-          const scatterDistance = 30 + distFromCenter * 0.5;
-          const scatterX = particle.homeX + Math.cos(angleFromCenter) * scatterDistance;
-          const scatterY = particle.homeY + Math.sin(angleFromCenter) * scatterDistance;
+      // Dispersion: 0 = solid logo, 1 = fully dispersed
+      const dispersion = isActive ? Math.min(1, amplitude * 2.5) : 0;
 
-          // Audio reactivity - particles bounce based on frequency
-          const particleFreqBand = (particle.audioOffset / (Math.PI * 2));
-          let audioInfluence = 0;
+      // Clear canvas (reset transform first)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, size, size);
 
-          if (particleFreqBand < 0.33) {
-            audioInfluence = bassLevel * 40;
-          } else if (particleFreqBand < 0.66) {
-            audioInfluence = midLevel * 30;
-          } else {
-            audioInfluence = highLevel * 25;
+      // Draw rainbow ring with subtle wobble (always visible)
+      ctx.save();
+      ctx.beginPath();
+
+      const wobbleAmount = 2 + amplitude * 3;
+      const wobbleFreq = 8;
+      for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
+        const wobble = Math.sin(angle * wobbleFreq + time * 2) * wobbleAmount * 0.3;
+        const r = ringRadius + wobble;
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
+        if (angle === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.closePath();
+
+      // Rainbow gradient matching the video
+      const ringGradient = ctx.createConicGradient(0, centerX, centerY);
+      ringGradient.addColorStop(0, "rgba(0, 200, 255, 0.85)");
+      ringGradient.addColorStop(0.12, "rgba(0, 100, 255, 0.85)");
+      ringGradient.addColorStop(0.25, "rgba(100, 0, 255, 0.85)");
+      ringGradient.addColorStop(0.37, "rgba(255, 0, 200, 0.85)");
+      ringGradient.addColorStop(0.5, "rgba(255, 0, 100, 0.85)");
+      ringGradient.addColorStop(0.62, "rgba(255, 150, 0, 0.85)");
+      ringGradient.addColorStop(0.75, "rgba(255, 255, 0, 0.85)");
+      ringGradient.addColorStop(0.87, "rgba(0, 255, 100, 0.85)");
+      ringGradient.addColorStop(1, "rgba(0, 200, 255, 0.85)");
+      ctx.strokeStyle = ringGradient;
+      ctx.lineWidth = 3 + amplitude * 2;
+      ctx.stroke();
+      ctx.restore();
+
+      // If not active or low dispersion, draw solid logo
+      if (dispersion < 0.1) {
+        const logoSize = size * 0.78;
+        const logoOffset = (size - logoSize) / 2;
+        ctx.globalAlpha = 1 - dispersion * 10;
+        ctx.drawImage(logoImg, logoOffset, logoOffset, logoSize, logoSize);
+        ctx.globalAlpha = 1;
+      }
+
+      // Draw particles when dispersed
+      if (dispersion > 0.05) {
+        const particleAlpha = Math.min(1, dispersion * 1.8);
+
+        for (const p of particles) {
+          // Chaotic noise-based displacement
+          const noiseX = noise(p.noiseOffsetX, p.noiseOffsetY, time * p.speed);
+          const noiseY = noise(p.noiseOffsetY, p.noiseOffsetX, time * p.speed * 1.1);
+
+          const maxDisp = dispersion * 45;
+
+          const targetX = p.baseX + noiseX * maxDisp;
+          const targetY = p.baseY + noiseY * maxDisp;
+
+          // Smooth movement
+          p.vx += (targetX - p.x) * 0.1;
+          p.vy += (targetY - p.y) * 0.1;
+          p.vx *= 0.9;
+          p.vy *= 0.9;
+
+          p.x = p.baseX + p.vx * dispersion;
+          p.y = p.baseY + p.vy * dispersion;
+
+          // Constrain within ring
+          const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
+          const maxDist = ringRadius - 8;
+
+          if (distFromCenter > maxDist) {
+            const angle = Math.atan2(p.y, p.x);
+            p.x = Math.cos(angle) * maxDist;
+            p.y = Math.sin(angle) * maxDist;
           }
 
-          // Add oscillation and audio bounce
-          const oscillation = Math.sin(time * 3 + particle.audioOffset) * 10;
-          const audioBounce = Math.sin(time * 8 + particle.audioOffset) * audioInfluence;
+          // Preserve center hole
+          if (distFromCenter < centerHoleRadius && dispersion > 0.3) {
+            const angle = Math.atan2(p.y, p.x);
+            const pushFactor = (1 - distFromCenter / centerHoleRadius) * dispersion;
+            p.x += Math.cos(angle) * pushFactor * 15;
+            p.y += Math.sin(angle) * pushFactor * 15;
+          }
 
-          const targetX = scatterX + oscillation + Math.cos(angleFromCenter) * audioBounce;
-          const targetY = scatterY + oscillation + Math.sin(angleFromCenter) * audioBounce;
+          // Draw particle
+          const drawX = centerX + p.x;
+          const drawY = centerY + p.y;
 
-          // Smooth movement towards target
-          particle.vx += (targetX - particle.x) * 0.08;
-          particle.vy += (targetY - particle.y) * 0.08;
-          particle.vx *= 0.9;
-          particle.vy *= 0.9;
-
-          particle.x += particle.vx;
-          particle.y += particle.vy;
-        } else {
-          // Reform mode - particles return home
-          const dx = particle.homeX - particle.x;
-          const dy = particle.homeY - particle.y;
-
-          particle.vx += dx * 0.1;
-          particle.vy += dy * 0.1;
-          particle.vx *= 0.85;
-          particle.vy *= 0.85;
-
-          particle.x += particle.vx;
-          particle.y += particle.vy;
-        }
-
-        // Draw particle
-        const alpha = isActive ? 0.8 + audioLevel * 0.2 : 1;
-        const sizeMultiplier = isActive ? 1 + audioLevel * 0.5 : 1;
-
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size * sizeMultiplier, 0, Math.PI * 2);
-        ctx.fillStyle = particle.color.replace("rgb", "rgba").replace(")", `, ${alpha})`);
-        ctx.fill();
-
-        // Add glow effect when active
-        if (isActive && audioLevel > 0.1) {
           ctx.beginPath();
-          ctx.arc(particle.x, particle.y, particle.size * sizeMultiplier * 2, 0, Math.PI * 2);
-          const glowAlpha = audioLevel * 0.3;
-          ctx.fillStyle = particle.color.replace("rgb", "rgba").replace(")", `, ${glowAlpha})`);
+          ctx.arc(drawX, drawY, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${particleAlpha})`;
           ctx.fill();
         }
+      }
+
+      // Return particles to base when not active
+      if (!isActive) {
+        for (const p of particles) {
+          p.vx *= 0.9;
+          p.vy *= 0.9;
+          p.x += (p.baseX - p.x) * 0.1;
+          p.y += (p.baseY - p.y) * 0.1;
+        }
+        smoothedAmplitudeRef.current *= 0.95;
       }
 
       animationRef.current = requestAnimationFrame(animate);
@@ -238,7 +290,7 @@ export function ParticleLogo({
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, [isInitialized, isActive, audioData, size]);
+  }, [isInitialized, isActive, audioData, size, dpr, noise]);
 
   // Initialize on mount
   useEffect(() => {
@@ -248,8 +300,6 @@ export function ParticleLogo({
   return (
     <canvas
       ref={canvasRef}
-      width={size}
-      height={size}
       className={className}
       style={{ width: size, height: size }}
     />

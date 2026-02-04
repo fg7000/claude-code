@@ -119,19 +119,10 @@ export default function ParticleDemo() {
       </h1>
 
       <div className="relative mb-8">
-        {/* Glow behind particle logo */}
-        {isActive && (
-          <div
-            className="absolute inset-0 logo-glow"
-            style={{ transform: "scale(1.5)" }}
-          />
-        )}
         <ParticleLogo
-          size={200}
-          particleCount={1000}
+          size={300}
           isActive={isActive}
           audioData={audioData}
-          className="relative z-10"
         />
       </div>
 
