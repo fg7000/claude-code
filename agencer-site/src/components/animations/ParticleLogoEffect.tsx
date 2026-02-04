@@ -263,6 +263,10 @@ export function ParticleLogoEffect({
         // Particle opacity ramps up as amplitude increases
         const particleOpacity = Math.min(1, (amplitude - logoThreshold) * 5);
 
+        // TWIST amount - rotates particles around center based on amplitude
+        // Half circle (π radians) rotation at full amplitude
+        const twistAmount = amplitude * Math.PI;
+
         for (const p of particles) {
           // Get 3D noise displacement
           const noiseResult = noise3D(
@@ -277,9 +281,23 @@ export function ParticleLogoEffect({
           const dy = noiseResult.y * noiseStrength;
           p.z = noiseResult.z * noiseStrength * 0.5; // Z for size variation
 
-          // Calculate position with expansion
-          p.x = p.baseX * expansion + dx;
-          p.y = p.baseY * expansion + dy;
+          // Calculate base expanded position
+          const expandedX = p.baseX * expansion + dx;
+          const expandedY = p.baseY * expansion + dy;
+
+          // Apply TWIST rotation around center
+          // Get current angle and distance from center
+          const dist = Math.sqrt(expandedX * expandedX + expandedY * expandedY);
+          const baseAngle = Math.atan2(expandedY, expandedX);
+
+          // Add twist - rotation increases with amplitude
+          // Outer particles twist more than inner ones for spiral effect
+          const distFactor = dist / ringRadius; // 0 at center, ~1 at ring
+          const rotatedAngle = baseAngle + twistAmount * distFactor;
+
+          // Apply rotated position
+          p.x = Math.cos(rotatedAngle) * dist;
+          p.y = Math.sin(rotatedAngle) * dist;
 
           // Soft boundary at ring
           const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
