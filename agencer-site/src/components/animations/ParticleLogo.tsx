@@ -157,19 +157,23 @@ export function ParticleLogo({
       }
 
       // Target dispersion based on raw amplitude
-      // INSTANT on attack, fast decay on release
+      // INSTANT on attack, INSTANT on release (nearly)
       const threshold = 0.06;
       const targetDispersion = rawAmplitude > threshold
         ? Math.min(1, (rawAmplitude - threshold) * 4)
         : 0;
 
-      // INSTANT attack, fast decay
+      // INSTANT attack AND decay - no sluggish smoothing
       if (targetDispersion > currentDispersionRef.current) {
-        // INSTANT - jump to target immediately
+        // INSTANT attack
         currentDispersionRef.current = targetDispersion;
       } else {
-        // Fast decay back to zero
-        currentDispersionRef.current += (targetDispersion - currentDispersionRef.current) * 0.3;
+        // NEARLY INSTANT decay - multiply by 0.3 each frame (drops to ~3% in 3 frames = 50ms)
+        currentDispersionRef.current *= 0.3;
+        // Snap to zero when very small
+        if (currentDispersionRef.current < 0.02) {
+          currentDispersionRef.current = 0;
+        }
       }
 
       const dispersion = currentDispersionRef.current;
