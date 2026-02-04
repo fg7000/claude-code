@@ -95,31 +95,36 @@ export function ParticleLogoEffect({
       img.src = "/AgencerLogoSvg3.svg";
     });
 
+    // Sample at VERY HIGH resolution for maximum detail
+    const sampleSize = 600;
+    const scaleFactor = size / sampleSize;
+
     const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = size;
-    tempCanvas.height = size;
+    tempCanvas.width = sampleSize;
+    tempCanvas.height = sampleSize;
     const tempCtx = tempCanvas.getContext("2d");
     if (!tempCtx) return;
 
-    tempCtx.drawImage(img, 0, 0, size, size);
-    const imageData = tempCtx.getImageData(0, 0, size, size);
+    tempCtx.drawImage(img, 0, 0, sampleSize, sampleSize);
+    const imageData = tempCtx.getImageData(0, 0, sampleSize, sampleSize);
     const pixels = imageData.data;
     const particles: Particle[] = [];
 
-    const centerX = size / 2;
-    const centerY = size / 2;
+    const sampleCenterX = sampleSize / 2;
+    const sampleCenterY = sampleSize / 2;
 
     // High density sampling - collect all colored pixels
     const allPositions: { x: number; y: number; r: number; g: number; b: number }[] = [];
 
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const i = (y * size + x) * 4;
+    for (let y = 0; y < sampleSize; y++) {
+      for (let x = 0; x < sampleSize; x++) {
+        const i = (y * sampleSize + x) * 4;
         const alpha = pixels[i + 3];
         if (alpha > 30) {
+          // Scale positions to display size
           allPositions.push({
-            x: x - centerX,
-            y: y - centerY,
+            x: (x - sampleCenterX) * scaleFactor,
+            y: (y - sampleCenterY) * scaleFactor,
             r: pixels[i],
             g: pixels[i + 1],
             b: pixels[i + 2],
@@ -128,8 +133,8 @@ export function ParticleLogoEffect({
       }
     }
 
-    // Target ~8000 particles for ultra high fidelity
-    const targetCount = 8000;
+    // Target ~20000 particles for ultra high fidelity
+    const targetCount = 20000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
@@ -143,7 +148,7 @@ export function ParticleLogoEffect({
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 0.6 + Math.random() * 0.4,
+        size: 0.3 + Math.random() * 0.3,
         distFromCenter: dist,
         angle: angle,
         phaseX: Math.random() * Math.PI * 2,
