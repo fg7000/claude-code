@@ -62,19 +62,28 @@ export function ParticleLogoEffect({
   const smoothedAmplitudeRef = useRef(0);
   const prevAmplitudeRef = useRef(0);
   const trailCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
 
   // Initialize particles from logo
   const initParticles = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas || isInitializedRef.current) return;
 
+    // Set canvas size with device pixel ratio for crisp rendering
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    // Create trail canvas
+    ctx.scale(dpr, dpr);
+
+    // Create trail canvas with same scaling
     const trailCanvas = document.createElement("canvas");
-    trailCanvas.width = size;
-    trailCanvas.height = size;
+    trailCanvas.width = size * dpr;
+    trailCanvas.height = size * dpr;
+    const trailCtxInit = trailCanvas.getContext("2d");
+    if (trailCtxInit) trailCtxInit.scale(dpr, dpr);
     trailCanvasRef.current = trailCanvas;
 
     const img = new window.Image();
@@ -119,8 +128,8 @@ export function ParticleLogoEffect({
       }
     }
 
-    // Target ~2000 particles for high fidelity
-    const targetCount = 2000;
+    // Target ~8000 particles for ultra high fidelity
+    const targetCount = 8000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
@@ -134,7 +143,7 @@ export function ParticleLogoEffect({
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 1.5 + Math.random() * 1,
+        size: 0.6 + Math.random() * 0.4,
         distFromCenter: dist,
         angle: angle,
         phaseX: Math.random() * Math.PI * 2,
@@ -154,7 +163,7 @@ export function ParticleLogoEffect({
 
     particlesRef.current = particles;
     isInitializedRef.current = true;
-  }, [size]);
+  }, [size, dpr]);
 
   // Animation loop
   useEffect(() => {
@@ -171,6 +180,7 @@ export function ParticleLogoEffect({
     const centerX = size / 2;
     const centerY = size / 2;
     const maxDist = size * 0.45;
+    const scaledSize = size * dpr;
 
     const animate = () => {
       const time = Date.now() * 0.001;
@@ -378,37 +388,21 @@ export function ParticleLogoEffect({
           p.y = p.baseY + effectY + ambientY * 0.3;
         }
 
-        // Draw particle to trail canvas with glow
+        // Draw particle as crisp small dot
         const drawX = centerX + p.x;
         const drawY = centerY + p.y;
-        const glowRadius = p.size * 3;
+        const alpha = Math.min(1, effectBrightness + 0.3);
 
-        // Create radial gradient for glow
-        const gradient = trailCtx.createRadialGradient(
-          drawX, drawY, 0,
-          drawX, drawY, glowRadius
-        );
-
-        const alpha = effectBrightness;
-        gradient.addColorStop(0, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`);
-        gradient.addColorStop(0.4, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha * 0.5})`);
-        gradient.addColorStop(1, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, 0)`);
-
-        trailCtx.beginPath();
-        trailCtx.arc(drawX, drawY, glowRadius, 0, Math.PI * 2);
-        trailCtx.fillStyle = gradient;
-        trailCtx.fill();
-
-        // Core particle
+        // Draw single crisp dot - no glow for maximum clarity
         trailCtx.beginPath();
         trailCtx.arc(drawX, drawY, p.size, 0, Math.PI * 2);
-        trailCtx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${Math.min(1, alpha + 0.2)})`;
+        trailCtx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${alpha})`;
         trailCtx.fill();
       }
 
       // Copy trail canvas to main canvas
       ctx.clearRect(0, 0, size, size);
-      ctx.drawImage(trailCanvas, 0, 0);
+      ctx.drawImage(trailCanvas, 0, 0, size, size);
 
       prevAmplitudeRef.current = amplitude;
       animationRef.current = requestAnimationFrame(animate);
@@ -417,7 +411,7 @@ export function ParticleLogoEffect({
     animate();
 
     return () => cancelAnimationFrame(animationRef.current);
-  }, [effect, audioData, size]);
+  }, [effect, audioData, size, dpr]);
 
   // Initialize
   useEffect(() => {
@@ -427,8 +421,6 @@ export function ParticleLogoEffect({
   return (
     <canvas
       ref={canvasRef}
-      width={size}
-      height={size}
       className={className}
       style={{ width: size, height: size }}
     />

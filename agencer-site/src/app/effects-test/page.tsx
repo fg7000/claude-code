@@ -204,7 +204,7 @@ export default function EffectsTestPage() {
               <span className="text-sm text-white/60 font-mono">{label}</span>
               <div className="relative">
                 <ParticleLogoEffect
-                  size={180}
+                  size={220}
                   effect={type}
                   audioData={audioData}
                 />
