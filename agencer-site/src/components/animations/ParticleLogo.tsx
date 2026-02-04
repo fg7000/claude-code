@@ -173,21 +173,22 @@ export function ParticleLogo({
         rawAmplitude = sum / currentAudioData.length / 255;
       }
 
-      // Determine if we should show particles or solid logo
-      const threshold = 0.06;
+      // VERY sensitive threshold - triggers on any sound
+      const threshold = 0.02;
       const shouldDisperse = rawAmplitude > threshold;
 
-      // INSTANT transitions - no smoothing
+      // INSTANT and AGGRESSIVE dispersion
       if (shouldDisperse) {
-        // Instantly set dispersion based on amplitude
-        dispersionRef.current = Math.min(1, (rawAmplitude - threshold) * 4);
+        // Very aggressive scaling - small audio = big response
+        dispersionRef.current = Math.min(1, (rawAmplitude - threshold) * 8);
       } else {
-        // Instantly snap back to solid
+        // Instant snap back
         dispersionRef.current = 0;
       }
 
       const dispersion = dispersionRef.current;
-      const expansionFactor = 1 + dispersion * 0.8;
+      // More expansion for bouncier feel
+      const expansionFactor = 1 + dispersion * 1.2;
 
       // Clear canvas
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -241,10 +242,11 @@ export function ParticleLogo({
         const particleAlpha = Math.min(1, dispersion * 2);
 
         for (const p of particles) {
-          const noiseX = noise(p.noiseOffsetX, p.noiseOffsetY, time * p.speed);
-          const noiseY = noise(p.noiseOffsetY, p.noiseOffsetX, time * p.speed * 1.1);
+          const noiseX = noise(p.noiseOffsetX, p.noiseOffsetY, time * p.speed * 2);
+          const noiseY = noise(p.noiseOffsetY, p.noiseOffsetX, time * p.speed * 2.2);
 
-          const chaosAmount = dispersion * 50;
+          // More chaos for bouncier, more dramatic effect
+          const chaosAmount = dispersion * 70;
 
           const dispersedX = p.baseX * expansionFactor + noiseX * chaosAmount;
           const dispersedY = p.baseY * expansionFactor + noiseY * chaosAmount;
