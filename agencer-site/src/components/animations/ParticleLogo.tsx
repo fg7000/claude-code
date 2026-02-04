@@ -157,8 +157,8 @@ export function ParticleLogo({
     const centerHoleRadius = size * 0.06;
     const logoRadius = size * 0.35;
 
-    // Threshold for breaking into particles
-    const BREAK_THRESHOLD = 0.15;
+    // Threshold for breaking into particles - low enough to trigger on speech
+    const BREAK_THRESHOLD = 0.08;
 
     const animate = () => {
       timeRef.current += 0.016;
@@ -175,10 +175,9 @@ export function ParticleLogo({
         rawAmplitude = sum / audioData.length / 255;
       }
 
-      // FAST smoothing - quick response to changes (both up AND down)
-      // This creates the snappy "heartbeat" effect
-      const smoothingUp = 0.3;    // Fast attack
-      const smoothingDown = 0.25; // Fast decay for snappy return
+      // VERY FAST smoothing - instant response for heartbeat effect
+      const smoothingUp = 0.5;    // Very fast attack
+      const smoothingDown = 0.4;  // Very fast decay for snappy return
 
       if (rawAmplitude > smoothedAmplitudeRef.current) {
         smoothedAmplitudeRef.current += (rawAmplitude - smoothedAmplitudeRef.current) * smoothingUp;
@@ -303,23 +302,23 @@ export function ParticleLogo({
         }
       }
 
-      // When dispersion is low, quickly return particles to base positions
-      if (dispersion < 0.2) {
-        const returnSpeed = 0.2; // Fast snap-back
+      // When dispersion is low, INSTANTLY snap particles back to base
+      if (dispersion < 0.3) {
+        const returnSpeed = 0.35; // Very fast snap-back
         for (const p of particles) {
           p.x += (p.baseX - p.x) * returnSpeed;
           p.y += (p.baseY - p.y) * returnSpeed;
-          p.vx *= 0.7;
-          p.vy *= 0.7;
+          p.vx *= 0.5; // Kill velocity quickly
+          p.vy *= 0.5;
         }
       }
 
-      // When not active at all, reset
+      // When not active at all, instant reset
       if (!isActive) {
-        smoothedAmplitudeRef.current *= 0.85;
+        smoothedAmplitudeRef.current *= 0.7; // Fast decay
         for (const p of particles) {
-          p.x += (p.baseX - p.x) * 0.15;
-          p.y += (p.baseY - p.y) * 0.15;
+          p.x += (p.baseX - p.x) * 0.25;
+          p.y += (p.baseY - p.y) * 0.25;
         }
       }
 

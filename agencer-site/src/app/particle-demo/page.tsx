@@ -11,7 +11,7 @@ export default function ParticleDemo() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationRef = useRef<number>(0);
 
-  // Simulated audio data for demo
+  // Simulated audio data for demo - with realistic speech pauses
   useEffect(() => {
     if (!isActive || useMic) return;
 
@@ -19,13 +19,30 @@ export default function ParticleDemo() {
       const data = new Uint8Array(128);
       const time = Date.now() * 0.001;
 
-      for (let i = 0; i < data.length; i++) {
-        // Create a dynamic audio-like pattern
-        const bass = i < 10 ? Math.sin(time * 4) * 0.5 + 0.5 : 0;
-        const mid = i >= 10 && i < 50 ? Math.sin(time * 6 + i * 0.1) * 0.4 + 0.4 : 0;
-        const high = i >= 50 ? Math.sin(time * 10 + i * 0.05) * 0.3 + 0.2 : 0;
+      // Simulate speech patterns with pauses
+      // Words last ~0.3-0.6s, pauses last ~0.1-0.3s
+      const speechCycle = time % 0.8; // 0.8 second cycle
+      const isSpeaking = speechCycle < 0.5; // Speaking for 0.5s, pause for 0.3s
 
-        data[i] = Math.floor((bass + mid + high) * 255 * (Math.random() * 0.3 + 0.7));
+      // Add variation - sometimes longer pauses
+      const longPauseCycle = time % 3.0;
+      const isLongPause = longPauseCycle > 2.5; // Every 3 seconds, longer pause
+
+      if (isSpeaking && !isLongPause) {
+        // Generate audio during "speech"
+        for (let i = 0; i < data.length; i++) {
+          const variation = Math.sin(time * 15 + i * 0.1) * 0.3 + 0.7;
+          const bass = i < 10 ? Math.sin(time * 8) * 0.4 + 0.5 : 0;
+          const mid = i >= 10 && i < 50 ? Math.sin(time * 12 + i * 0.1) * 0.35 + 0.4 : 0;
+          const high = i >= 50 ? Math.sin(time * 20 + i * 0.05) * 0.25 + 0.2 : 0;
+
+          data[i] = Math.floor((bass + mid + high) * 255 * variation * (Math.random() * 0.2 + 0.8));
+        }
+      } else {
+        // Silence during pauses - near zero values
+        for (let i = 0; i < data.length; i++) {
+          data[i] = Math.floor(Math.random() * 5); // Very low noise floor
+        }
       }
 
       setAudioData(data);
