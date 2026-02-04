@@ -33,8 +33,21 @@ export function ParticleLogo({
   const animationRef = useRef<number>(0);
   const logoImageRef = useRef<HTMLImageElement | null>(null);
   const timeRef = useRef(0);
-  const currentDispersionRef = useRef(0);
+  const dispersionRef = useRef(0);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Store audioData and isActive in refs so animation loop can access latest values
+  const audioDataRef = useRef<Uint8Array | null>(null);
+  const isActiveRef = useRef(false);
+
+  // Update refs when props change
+  useEffect(() => {
+    audioDataRef.current = audioData;
+  }, [audioData]);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
 
   const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
 
@@ -125,7 +138,7 @@ export function ParticleLogo({
     setIsInitialized(true);
   }, [size, dpr]);
 
-  // Animation loop
+  // Animation loop - runs once, reads from refs
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -146,37 +159,34 @@ export function ParticleLogo({
       const time = timeRef.current;
       const particles = particlesRef.current;
 
-      // Calculate amplitude DIRECTLY - no smoothing on attack
+      // Read current values from refs (not props)
+      const currentAudioData = audioDataRef.current;
+      const currentIsActive = isActiveRef.current;
+
+      // Calculate amplitude
       let rawAmplitude = 0;
-      if (isActive && audioData && audioData.length > 0) {
+      if (currentIsActive && currentAudioData && currentAudioData.length > 0) {
         let sum = 0;
-        for (let i = 0; i < audioData.length; i++) {
-          sum += audioData[i];
+        for (let i = 0; i < currentAudioData.length; i++) {
+          sum += currentAudioData[i];
         }
-        rawAmplitude = sum / audioData.length / 255;
+        rawAmplitude = sum / currentAudioData.length / 255;
       }
 
-      // Target dispersion based on raw amplitude
-      // INSTANT on attack, INSTANT on release (nearly)
+      // Determine if we should show particles or solid logo
       const threshold = 0.06;
-      const targetDispersion = rawAmplitude > threshold
-        ? Math.min(1, (rawAmplitude - threshold) * 4)
-        : 0;
+      const shouldDisperse = rawAmplitude > threshold;
 
-      // INSTANT attack AND decay - no sluggish smoothing
-      if (targetDispersion > currentDispersionRef.current) {
-        // INSTANT attack
-        currentDispersionRef.current = targetDispersion;
+      // INSTANT transitions - no smoothing
+      if (shouldDisperse) {
+        // Instantly set dispersion based on amplitude
+        dispersionRef.current = Math.min(1, (rawAmplitude - threshold) * 4);
       } else {
-        // NEARLY INSTANT decay - multiply by 0.3 each frame (drops to ~3% in 3 frames = 50ms)
-        currentDispersionRef.current *= 0.3;
-        // Snap to zero when very small
-        if (currentDispersionRef.current < 0.02) {
-          currentDispersionRef.current = 0;
-        }
+        // Instantly snap back to solid
+        dispersionRef.current = 0;
       }
 
-      const dispersion = currentDispersionRef.current;
+      const dispersion = dispersionRef.current;
       const expansionFactor = 1 + dispersion * 0.8;
 
       // Clear canvas
@@ -217,36 +227,31 @@ export function ParticleLogo({
       ctx.stroke();
       ctx.restore();
 
-      // SOLID LOGO when dispersion is low
-      if (dispersion < 0.2) {
+      // SOLID LOGO when not dispersed
+      if (dispersion < 0.5) {
         const logoSize = size * 0.70;
         const logoOffset = (size - logoSize) / 2;
-        ctx.globalAlpha = 1 - (dispersion / 0.2);
+        ctx.globalAlpha = 1 - dispersion * 2;
         ctx.drawImage(logoImg, logoOffset, logoOffset, logoSize, logoSize);
         ctx.globalAlpha = 1;
       }
 
-      // PARTICLES when dispersion is high
-      if (dispersion > 0.05) {
-        const particleAlpha = Math.min(1, dispersion * 4);
+      // PARTICLES when dispersed
+      if (dispersion > 0) {
+        const particleAlpha = Math.min(1, dispersion * 2);
 
         for (const p of particles) {
-          // Calculate dispersed position directly (no velocity physics)
           const noiseX = noise(p.noiseOffsetX, p.noiseOffsetY, time * p.speed);
           const noiseY = noise(p.noiseOffsetY, p.noiseOffsetX, time * p.speed * 1.1);
 
           const chaosAmount = dispersion * 50;
 
-          // Dispersed target
           const dispersedX = p.baseX * expansionFactor + noiseX * chaosAmount;
           const dispersedY = p.baseY * expansionFactor + noiseY * chaosAmount;
 
-          // DIRECT lerp - position is direct mix of base and dispersed
-          // This gives INSTANT response
           p.x = p.baseX + (dispersedX - p.baseX) * dispersion;
           p.y = p.baseY + (dispersedY - p.baseY) * dispersion;
 
-          // Soft boundary
           const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
           const softMaxDist = ringRadius + dispersion * 20;
 
@@ -256,7 +261,6 @@ export function ParticleLogo({
             p.y = Math.sin(angle) * softMaxDist;
           }
 
-          // Center hole
           if (distFromCenter < centerHoleRadius && dispersion > 0.3) {
             const angle = Math.atan2(p.y, p.x);
             const push = (1 - distFromCenter / centerHoleRadius) * dispersion * 10;
@@ -264,17 +268,11 @@ export function ParticleLogo({
             p.y += Math.sin(angle) * push;
           }
 
-          // Draw
           ctx.beginPath();
           ctx.arc(centerX + p.x, centerY + p.y, p.size, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${particleAlpha})`;
           ctx.fill();
         }
-      }
-
-      // Reset when not active
-      if (!isActive) {
-        currentDispersionRef.current *= 0.7;
       }
 
       animationRef.current = requestAnimationFrame(animate);
@@ -285,7 +283,7 @@ export function ParticleLogo({
     return () => {
       cancelAnimationFrame(animationRef.current);
     };
-  }, [isInitialized, isActive, audioData, size, dpr, noise]);
+  }, [isInitialized, size, dpr, noise]); // Removed audioData and isActive - using refs instead
 
   useEffect(() => {
     initParticles();
