@@ -183,10 +183,10 @@ export function ParticleLogoEffect({
       // Get current amplitude
       const rawAmplitude = audioDataRef.current.amplitude;
 
-      // SMOOTH amplitude envelope - this creates the fluid, synced feel
-      // Fast attack, medium release for natural voice following
-      const attackSpeed = 0.25;  // How fast to respond to sound
-      const releaseSpeed = 0.08; // How fast to decay (slower = smoother)
+      // FASTER envelope for snappy heartbeat effect
+      // Quick attack AND quick release for responsive back-and-forth
+      const attackSpeed = 0.4;   // Very fast attack
+      const releaseSpeed = 0.25; // Fast release for quick return to solid
 
       if (rawAmplitude > smoothedAmplitudeRef.current) {
         smoothedAmplitudeRef.current += (rawAmplitude - smoothedAmplitudeRef.current) * attackSpeed;
@@ -196,14 +196,13 @@ export function ParticleLogoEffect({
 
       const amplitude = smoothedAmplitudeRef.current;
 
-      // Noise strength and displacement modulated by amplitude
-      // Even at 0 amplitude, there's subtle movement (particles feel alive)
-      const baseNoiseStrength = 3; // Always some subtle movement
-      const audioNoiseStrength = amplitude * 80; // Audio adds more
+      // Noise strength - MORE bouncy explosion
+      const baseNoiseStrength = 2;
+      const audioNoiseStrength = amplitude * 120; // Increased for more bounce
       const noiseStrength = baseNoiseStrength + audioNoiseStrength;
 
-      // Dispersion/expansion also modulated by amplitude
-      const expansion = 1 + amplitude * 0.6;
+      // Expansion - MORE bouncy outward explosion
+      const expansion = 1 + amplitude * 1.0; // Increased from 0.6
 
       // Clear canvas
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -264,8 +263,8 @@ export function ParticleLogoEffect({
         const particleOpacity = Math.min(1, (amplitude - logoThreshold) * 5);
 
         // TWIST amount - rotates particles around center based on amplitude
-        // Half circle (π radians) rotation at full amplitude
-        const twistAmount = amplitude * Math.PI;
+        // FULL circle (2π radians) rotation at full amplitude
+        const twistAmount = amplitude * Math.PI * 2;
 
         for (const p of particles) {
           // Get 3D noise displacement
@@ -279,7 +278,8 @@ export function ParticleLogoEffect({
           // Apply noise displacement modulated by amplitude
           const dx = noiseResult.x * noiseStrength;
           const dy = noiseResult.y * noiseStrength;
-          p.z = noiseResult.z * noiseStrength * 0.5; // Z for size variation
+          // MORE 3D - increased Z depth effect
+          p.z = noiseResult.z * noiseStrength * 1.2;
 
           // Calculate base expanded position
           const expandedX = p.baseX * expansion + dx;
@@ -318,9 +318,9 @@ export function ParticleLogoEffect({
             p.y += Math.sin(angle) * push;
           }
 
-          // Size varies with Z depth and amplitude
-          const depthScale = 1 + p.z * 0.02;
-          const drawSize = p.size * depthScale * (0.8 + amplitude * 0.4);
+          // Size varies with Z depth and amplitude - MORE 3D
+          const depthScale = 1 + p.z * 0.05; // Increased depth effect
+          const drawSize = p.size * depthScale * (0.7 + amplitude * 0.6);
 
           // Draw particle
           ctx.beginPath();
