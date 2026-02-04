@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ParticleLogoEffect, EffectType } from "@/components/animations/ParticleLogoEffect";
-
-const EFFECTS: { type: EffectType; label: string }[] = [
-  { type: "breathe", label: "1: Breathe" },
-  { type: "shimmer", label: "2: Shimmer" },
-  { type: "turbulence", label: "3: Turbulence" },
-  { type: "ripple", label: "4: Ripple" },
-  { type: "glow", label: "5: Glow" },
-];
+import { ParticleLogoEffect } from "@/components/animations/ParticleLogoEffect";
 
 export default function EffectsTestPage() {
   const [audioMode, setAudioMode] = useState<"off" | "synthetic" | "mic">("off");
@@ -47,9 +39,6 @@ export default function EffectsTestPage() {
     const gainNode = ctx.createGain();
 
     oscillator.type = "sawtooth";
-    oscillator.frequency.setValueAtTime(180, ctx.currentTime);
-
-    // Add some frequency variation
     oscillator.frequency.setValueAtTime(180, ctx.currentTime);
 
     oscillator.connect(gainNode);
@@ -190,36 +179,34 @@ export default function EffectsTestPage() {
   const audioData = { amplitude, frequencies, isOnset };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
+    <div className="min-h-screen bg-[#5a5a5a] flex flex-col">
       {/* Header */}
       <div className="p-4 text-center border-b border-white/10">
-        <h1 className="text-xl font-serif text-white/90">Particle Effects Test</h1>
+        <h1 className="text-xl font-serif text-white/90">Particle Logo Effect</h1>
+        <p className="text-sm text-white/50 mt-1">Based on video reference</p>
       </div>
 
-      {/* Effects Row */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="flex gap-4 overflow-x-auto pb-4" style={{ minWidth: "min-content" }}>
-          {EFFECTS.map(({ type, label }) => (
-            <div key={type} className="flex flex-col items-center gap-3">
-              <span className="text-sm text-white/60 font-mono">{label}</span>
-              <div className="relative">
-                <ParticleLogoEffect
-                  size={220}
-                  effect={type}
-                  audioData={audioData}
-                />
-              </div>
-            </div>
-          ))}
+      {/* Main Effect Display */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex flex-col items-center gap-6">
+          <ParticleLogoEffect
+            size={400}
+            effect="breathe"
+            audioData={audioData}
+          />
+          <p className="text-white/40 text-sm">
+            {audioMode === "off" ? "Click a button below to start" :
+             amplitude > 0.1 ? "Speaking..." : "Listening..."}
+          </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="p-6 border-t border-white/10">
+      <div className="p-6 border-t border-white/10 bg-black/20">
         <div className="max-w-2xl mx-auto flex flex-col items-center gap-4">
           {/* Amplitude Meter */}
           <div className="w-full max-w-md">
-            <div className="text-xs text-white/40 mb-1 font-mono">Amplitude</div>
+            <div className="text-xs text-white/40 mb-1 font-mono">Amplitude: {amplitude.toFixed(3)}</div>
             <div className="h-3 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-75"
@@ -268,7 +255,7 @@ export default function EffectsTestPage() {
           </div>
 
           <p className="text-white/30 text-sm text-center">
-            All 5 effects respond to the same audio input simultaneously
+            Logo stays solid when silent, dissolves into particles when audio is detected
           </p>
         </div>
       </div>
