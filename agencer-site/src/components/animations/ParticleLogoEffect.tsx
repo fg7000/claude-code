@@ -7,14 +7,15 @@ export type EffectType = "breathe" | "shimmer" | "turbulence" | "ripple" | "glow
 interface Particle {
   x: number;
   y: number;
-  z: number; // 3D depth
+  z: number;
   baseX: number;
   baseY: number;
   color: { r: number; g: number; b: number };
   size: number;
-  noiseOffsetX: number;
-  noiseOffsetY: number;
-  noiseOffsetZ: number;
+  // Each particle has unique noise offsets for organic movement
+  seed: number;
+  angle: number; // Base angle from center
+  dist: number;  // Base distance from center
 }
 
 interface ParticleLogoEffectProps {
@@ -39,11 +40,9 @@ export function ParticleLogoEffect({
   const isInitializedRef = useRef(false);
   const logoImageRef = useRef<HTMLImageElement | null>(null);
   const timeRef = useRef(0);
-  // Smooth amplitude envelope - this is key for fluid motion
   const smoothedAmplitudeRef = useRef(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Store audioData in ref
   const audioDataRef = useRef(audioData);
   useEffect(() => {
     audioDataRef.current = audioData;
@@ -51,32 +50,7 @@ export function ParticleLogoEffect({
 
   const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
 
-  // 3D Simplex-like noise function for organic motion
-  const noise3D = useCallback((x: number, y: number, z: number, time: number): { x: number; y: number; z: number } => {
-    // Multi-octave 3D noise for curl-like behavior
-    const scale1 = 0.008;
-    const scale2 = 0.015;
-    const scale3 = 0.025;
-
-    const nx =
-      Math.sin(x * scale1 + time * 0.5) * Math.cos(y * scale1 + time * 0.3) * Math.sin(z * scale1 + time * 0.4) +
-      Math.sin(x * scale2 - time * 0.7) * Math.cos(y * scale2 + time * 0.5) * 0.5 +
-      Math.sin(x * scale3 + time * 0.9) * Math.cos(z * scale3 - time * 0.6) * 0.25;
-
-    const ny =
-      Math.cos(x * scale1 + time * 0.4) * Math.sin(y * scale1 - time * 0.5) * Math.cos(z * scale1 + time * 0.3) +
-      Math.cos(x * scale2 + time * 0.6) * Math.sin(y * scale2 - time * 0.4) * 0.5 +
-      Math.cos(y * scale3 - time * 0.8) * Math.sin(z * scale3 + time * 0.5) * 0.25;
-
-    const nz =
-      Math.sin(x * scale1 - time * 0.3) * Math.sin(y * scale1 + time * 0.6) * Math.cos(z * scale1 - time * 0.5) +
-      Math.sin(y * scale2 + time * 0.5) * Math.cos(z * scale2 - time * 0.7) * 0.5 +
-      Math.cos(x * scale3 + time * 0.4) * Math.sin(y * scale3 - time * 0.3) * 0.25;
-
-    return { x: nx, y: ny, z: nz };
-  }, []);
-
-  // Initialize particles
+  // Initialize particles from logo
   const initParticles = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas || isInitializedRef.current) return;
@@ -86,7 +60,6 @@ export function ParticleLogoEffect({
 
     const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
-    ctx.scale(dpr, dpr);
 
     const img = new window.Image();
     img.crossOrigin = "anonymous";
@@ -99,6 +72,7 @@ export function ParticleLogoEffect({
 
     logoImageRef.current = img;
 
+    // Sample the logo at high resolution
     const sampleSize = 800;
     const logoScale = 0.70;
     const scaleFactor = (size * logoScale) / sampleSize;
@@ -135,11 +109,15 @@ export function ParticleLogoEffect({
       }
     }
 
-    const targetCount = 60000;
+    // High particle count for crisp detail
+    const targetCount = 80000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
       const pos = allPositions[i];
+      const angle = Math.atan2(pos.y, pos.x);
+      const dist = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
+
       particles.push({
         x: pos.x,
         y: pos.y,
@@ -147,16 +125,15 @@ export function ParticleLogoEffect({
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 0.4 + Math.random() * 0.3,
-        noiseOffsetX: Math.random() * 500,
-        noiseOffsetY: Math.random() * 500,
-        noiseOffsetZ: Math.random() * 500,
+        size: 0.5 + Math.random() * 0.3,
+        seed: Math.random() * 1000,
+        angle,
+        dist,
       });
     }
 
     particlesRef.current = particles;
     isInitializedRef.current = true;
-    console.log('Particles initialized:', particles.length);
     setIsLoaded(true);
   }, [size, dpr]);
 
@@ -174,24 +151,19 @@ export function ParticleLogoEffect({
     const centerX = size / 2;
     const centerY = size / 2;
     const ringRadius = size * 0.47;
-    const centerHoleRadius = size * 0.05;
-
-    let frameCount = 0;
+    const centerHoleRadius = size * 0.04;
 
     const animate = () => {
-      try {
-      frameCount++;
       timeRef.current += 0.016;
       const time = timeRef.current;
       const particles = particlesRef.current;
 
-      // Get current amplitude
+      // Get raw amplitude
       const rawAmplitude = audioDataRef.current.amplitude;
 
-      // FASTER envelope for snappy heartbeat effect
-      // Quick attack AND quick release for responsive back-and-forth
-      const attackSpeed = 0.4;   // Very fast attack
-      const releaseSpeed = 0.25; // Fast release for quick return to solid
+      // SNAPPY envelope - fast attack, fast release for heartbeat feel
+      const attackSpeed = 0.5;
+      const releaseSpeed = 0.3;
 
       if (rawAmplitude > smoothedAmplitudeRef.current) {
         smoothedAmplitudeRef.current += (rawAmplitude - smoothedAmplitudeRef.current) * attackSpeed;
@@ -201,34 +173,22 @@ export function ParticleLogoEffect({
 
       const amplitude = smoothedAmplitudeRef.current;
 
-      // Noise strength for particle movement
-      const baseNoiseStrength = 2;
-      const audioNoiseStrength = amplitude * 60; // Moderate bounce
-      const noiseStrength = baseNoiseStrength + audioNoiseStrength;
-
-      // Expansion - MORE bouncy outward explosion
-      const expansion = 1 + amplitude * 1.0; // Increased from 0.6
-
       // Clear canvas
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      // Draw rainbow ring
+      // Draw rainbow ring (always visible, wobbles with amplitude)
       ctx.save();
       ctx.beginPath();
-
-      const wobbleAmount = 1 + amplitude * 6;
+      const wobbleAmount = 1 + amplitude * 8;
       const wobbleFreq = 5;
       for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
         const wobble = Math.sin(angle * wobbleFreq + time * 2) * wobbleAmount;
         const r = ringRadius + wobble;
         const x = centerX + Math.cos(angle) * r;
         const y = centerY + Math.sin(angle) * r;
-        if (angle === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
+        if (angle === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
       ctx.closePath();
 
@@ -243,114 +203,96 @@ export function ParticleLogoEffect({
       ringGradient.addColorStop(0.87, "rgba(0, 255, 100, 0.9)");
       ringGradient.addColorStop(1, "rgba(0, 200, 255, 0.9)");
       ctx.strokeStyle = ringGradient;
-      ctx.lineWidth = 2 + amplitude * 3;
+      ctx.lineWidth = 2 + amplitude * 4;
       ctx.stroke();
       ctx.restore();
 
-      // Draw solid logo when amplitude is low
-      // Threshold below which logo is fully visible
-      const logoThreshold = 0.08;
-      const logoOpacity = amplitude < logoThreshold
-        ? 1
-        : Math.max(0, 1 - (amplitude - logoThreshold) * 5);
+      // Threshold for switching between solid logo and particles
+      const threshold = 0.05;
 
-      if (logoOpacity > 0.01) {
+      if (amplitude < threshold) {
+        // SOLID LOGO - clean and crisp when silent
         const logoSize = size * 0.70;
         const logoOffset = (size - logoSize) / 2;
-        ctx.globalAlpha = logoOpacity;
         ctx.drawImage(logoImg, logoOffset, logoOffset, logoSize, logoSize);
-        ctx.globalAlpha = 1;
-      }
+      } else {
+        // PARTICLES - alive, twisting, bouncing when speaking
 
-      // Draw particles ONLY when amplitude is above threshold
-      if (amplitude > logoThreshold) {
-        if (frameCount % 60 === 0) {
-          console.log('Drawing particles, amplitude:', amplitude.toFixed(3), 'count:', particles.length);
-        }
-        // Particle opacity ramps up as amplitude increases
-        const particleOpacity = Math.min(1, (amplitude - logoThreshold) * 5);
+        // Normalize amplitude above threshold (0 to 1 range)
+        const normalizedAmp = Math.min(1, (amplitude - threshold) / 0.5);
 
-        // TWIST amount - rotates particles around center based on amplitude
-        // FULL circle (2π radians) rotation at full amplitude
-        const twistAmount = amplitude * Math.PI * 2;
+        // Twist amount - full rotation at high amplitude
+        const maxTwist = Math.PI * 1.5; // 270 degrees max twist
+        const twistAmount = normalizedAmp * maxTwist;
+
+        // Expansion - particles push outward
+        const expansion = 1 + normalizedAmp * 0.4;
+
+        // Dispersion - how much particles scatter from their base position
+        const dispersion = normalizedAmp * 25;
 
         for (const p of particles) {
-          // Get 3D noise displacement
-          const noiseResult = noise3D(
-            p.noiseOffsetX + p.baseX,
-            p.noiseOffsetY + p.baseY,
-            p.noiseOffsetZ,
-            time * 0.8
-          );
+          // Organic noise-based movement
+          const noiseTime = time * 1.2;
+          const nx = Math.sin(p.seed + noiseTime * 0.7) * Math.cos(p.seed * 0.5 + noiseTime * 0.5);
+          const ny = Math.cos(p.seed * 0.7 + noiseTime * 0.6) * Math.sin(p.seed * 0.3 + noiseTime * 0.8);
+          const nz = Math.sin(p.seed * 0.4 + noiseTime * 0.9) * 0.5;
 
-          // Apply noise displacement modulated by amplitude
-          const dx = noiseResult.x * noiseStrength;
-          const dy = noiseResult.y * noiseStrength;
-          // MORE 3D - increased Z depth effect
-          p.z = noiseResult.z * noiseStrength * 1.2;
+          // Apply dispersion based on noise
+          const dx = nx * dispersion;
+          const dy = ny * dispersion;
+          p.z = nz * dispersion;
 
-          // Calculate base expanded position
+          // Calculate expanded position
           const expandedX = p.baseX * expansion + dx;
           const expandedY = p.baseY * expansion + dy;
 
-          // Apply TWIST rotation around center
-          // Get current angle and distance from center
+          // Apply twist rotation around center
           const dist = Math.sqrt(expandedX * expandedX + expandedY * expandedY);
           const baseAngle = Math.atan2(expandedY, expandedX);
 
-          // Add twist - rotation increases with amplitude
-          // Outer particles twist more than inner ones for spiral effect
-          const distFactor = dist / ringRadius; // 0 at center, ~1 at ring
+          // Outer particles twist more (spiral effect)
+          const distFactor = Math.min(1, dist / ringRadius);
           const rotatedAngle = baseAngle + twistAmount * distFactor;
 
-          // Apply rotated position
           p.x = Math.cos(rotatedAngle) * dist;
           p.y = Math.sin(rotatedAngle) * dist;
 
-          // Soft boundary at ring
-          const distFromCenter = Math.sqrt(p.x * p.x + p.y * p.y);
-          const maxDist = ringRadius + amplitude * 30;
-
-          if (distFromCenter > maxDist) {
-            const angle = Math.atan2(p.y, p.x);
-            const pushBack = (distFromCenter - maxDist) * 0.5;
-            p.x -= Math.cos(angle) * pushBack;
-            p.y -= Math.sin(angle) * pushBack;
+          // Keep particles within ring boundary (soft constraint)
+          const currentDist = Math.sqrt(p.x * p.x + p.y * p.y);
+          const maxDist = ringRadius - 5 + normalizedAmp * 15;
+          if (currentDist > maxDist) {
+            const scale = maxDist / currentDist;
+            p.x *= scale;
+            p.y *= scale;
           }
 
-          // Center hole
-          if (distFromCenter < centerHoleRadius) {
+          // Maintain center hole
+          if (currentDist < centerHoleRadius) {
             const angle = Math.atan2(p.y, p.x);
-            const push = (centerHoleRadius - distFromCenter) * 0.8;
-            p.x += Math.cos(angle) * push;
-            p.y += Math.sin(angle) * push;
+            p.x = Math.cos(angle) * centerHoleRadius;
+            p.y = Math.sin(angle) * centerHoleRadius;
           }
 
-          // Size varies with Z depth and amplitude
-          // Clamp z effect to prevent negative sizes
-          const zEffect = Math.max(-10, Math.min(10, p.z * 0.02));
-          const depthScale = Math.max(0.3, 1 + zEffect);
-          const drawSize = Math.max(0.2, p.size * depthScale * (0.8 + amplitude * 0.4));
+          // Particle size - varies with depth and amplitude
+          const depthScale = 1 + p.z * 0.015;
+          const ampScale = 0.8 + normalizedAmp * 0.4;
+          const drawSize = Math.max(0.3, Math.min(1.5, p.size * depthScale * ampScale));
 
-          // Draw particle
+          // Draw particle with full opacity
           ctx.beginPath();
           ctx.arc(centerX + p.x, centerY + p.y, drawSize, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${particleOpacity})`;
+          ctx.fillStyle = `rgb(${p.color.r}, ${p.color.g}, ${p.color.b})`;
           ctx.fill();
         }
       }
 
-      } catch (error) {
-        console.error('Animation error:', error);
-      }
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    console.log('ParticleLogoEffect: Animation started');
     animate();
-
     return () => cancelAnimationFrame(animationRef.current);
-  }, [isLoaded, size, dpr, noise3D]);
+  }, [isLoaded, size, dpr]);
 
   useEffect(() => {
     initParticles();
