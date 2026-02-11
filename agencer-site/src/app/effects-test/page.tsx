@@ -94,6 +94,11 @@ export default function EffectsTestPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const { ctx, analyser } = initAudio();
 
+      // Resume AudioContext (required for user interaction)
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+
       const source = ctx.createMediaStreamSource(stream);
       source.connect(analyser);
 
@@ -148,7 +153,8 @@ export default function EffectsTestPage() {
         const val = (timeData[i] - 128) / 128;
         sum += val * val;
       }
-      const rms = Math.sqrt(sum / bufferLength);
+      // Boost microphone sensitivity (mic input is quieter than synthetic)
+      const rms = Math.min(1, Math.sqrt(sum / bufferLength) * 3);
 
       // Detect onset
       const onset = rms > onsetThreshold && prevAmplitudeRef.current < onsetThreshold;
@@ -179,7 +185,7 @@ export default function EffectsTestPage() {
   const audioData = { amplitude, frequencies, isOnset };
 
   return (
-    <div className="min-h-screen bg-[#5a5a5a] flex flex-col">
+    <div className="min-h-screen bg-black flex flex-col">
       {/* Header */}
       <div className="p-4 text-center border-b border-white/10">
         <h1 className="text-xl font-serif text-white/90">Particle Logo Effect</h1>

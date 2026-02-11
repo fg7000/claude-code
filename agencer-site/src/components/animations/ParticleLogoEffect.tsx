@@ -190,15 +190,24 @@ export function ParticleLogoEffect({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      // Draw ring - SIMPLE, clean, organic shape-morphing with audio
+      // Draw ring - AUDIO REACTIVE with glow
       ctx.save();
+
+      // Ring also glows based on amplitude
+      ctx.shadowBlur = 8 + amplitude * 20;
+      ctx.shadowColor = `rgba(100, 200, 255, ${0.3 + amplitude * 0.5})`;
+
       ctx.beginPath();
 
-      // Subtle organic wobble that responds to audio
-      const morphAmount = amplitude * 10;
+      // MORE responsive wobble - reacts strongly to audio
+      const baseWobble = 2; // Slight wobble even when silent
+      const audioWobble = amplitude * 20; // Strong reaction to audio
+      const morphAmount = baseWobble + audioWobble;
+      const morphSpeed = 2 + amplitude * 3; // Speed up with audio
+
       for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
-        const wobble = Math.sin(angle * 3 + time * 2) * morphAmount +
-                       Math.sin(angle * 5 - time * 1.5) * morphAmount * 0.4;
+        const wobble = Math.sin(angle * 4 + time * morphSpeed) * morphAmount +
+                       Math.sin(angle * 7 - time * morphSpeed * 0.8) * morphAmount * 0.3;
         const r = ringRadius + wobble;
         const x = centerX + Math.cos(angle) * r;
         const y = centerY + Math.sin(angle) * r;
@@ -207,8 +216,8 @@ export function ParticleLogoEffect({
       }
       ctx.closePath();
 
-      // Rainbow gradient
-      const ringGradient = ctx.createConicGradient(time * 0.3, centerX, centerY);
+      // Rainbow gradient that rotates
+      const ringGradient = ctx.createConicGradient(time * 0.5, centerX, centerY);
       ringGradient.addColorStop(0, "rgba(0, 200, 255, 1)");
       ringGradient.addColorStop(0.125, "rgba(0, 100, 255, 1)");
       ringGradient.addColorStop(0.25, "rgba(100, 0, 255, 1)");
@@ -219,7 +228,7 @@ export function ParticleLogoEffect({
       ringGradient.addColorStop(0.875, "rgba(0, 255, 100, 1)");
       ringGradient.addColorStop(1, "rgba(0, 200, 255, 1)");
       ctx.strokeStyle = ringGradient;
-      ctx.lineWidth = 3 + amplitude * 3;
+      ctx.lineWidth = 2 + amplitude * 4;
       ctx.stroke();
       ctx.restore()
 
@@ -286,36 +295,41 @@ export function ParticleLogoEffect({
         // Sort by Z (back to front) for proper depth
         particleData.sort((a, b) => a.drawZ - b.drawZ);
 
-        // Draw GLOSSY 3D particles with radial gradients
+        // Draw GLOSSY 3D particles with AVATAR TREE GLOW effect
         for (const { p, drawX, drawY, drawZ, drawSize } of particleData) {
           const px = centerX + drawX;
           const py = centerY + drawY;
           const radius = drawSize * 1.2;
+          const { r, g, b } = p.color;
+
+          // AVATAR GLOW - particles emit colored light
+          ctx.save();
+          ctx.shadowBlur = 12 + normalizedAmp * 8;
+          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.8)`;
 
           // Create radial gradient for 3D glossy sphere effect
-          // Highlight offset toward top-left
           const highlightX = px - radius * 0.3;
           const highlightY = py - radius * 0.3;
 
           const gradient = ctx.createRadialGradient(
-            highlightX, highlightY, 0,  // Inner circle (highlight)
-            px, py, radius              // Outer circle (edge)
+            highlightX, highlightY, 0,
+            px, py, radius
           );
 
-          // Brighter highlight in top-left
-          const { r, g, b } = p.color;
-          const highlight = `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, 1)`;
+          // Brighter, more vivid colors for glow effect
+          const highlight = `rgba(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)}, 1)`;
           const midtone = `rgba(${r}, ${g}, ${b}, 1)`;
-          const shadow = `rgba(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)}, 0.9)`;
+          const edge = `rgba(${r}, ${g}, ${b}, 0.7)`;
 
           gradient.addColorStop(0, highlight);
-          gradient.addColorStop(0.4, midtone);
-          gradient.addColorStop(1, shadow);
+          gradient.addColorStop(0.5, midtone);
+          gradient.addColorStop(1, edge);
 
           ctx.beginPath();
           ctx.arc(px, py, radius, 0, Math.PI * 2);
           ctx.fillStyle = gradient;
           ctx.fill();
+          ctx.restore();
         }
       }
 
