@@ -114,15 +114,13 @@ export function ParticleLogoEffect({
       }
     }
 
-    // Fewer particles so glossy effect is visible
-    const targetCount = 8000;
+    // Fewer particles - gaps must be visible even with glow
+    const targetCount = 5000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
       const pos = allPositions[i];
 
-      // Each particle gets COMPLETELY RANDOM orbit parameters
-      // Circular orbits with varying sizes and speeds for swirling effect
       particles.push({
         x: pos.x,
         y: pos.y,
@@ -130,7 +128,7 @@ export function ParticleLogoEffect({
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 1.4 + Math.random() * 0.8, // Bigger particles for visible gloss
+        size: 1.2 + Math.random() * 0.6, // Moderate size
         // Orbital speeds - some fast, some slow, some clockwise, some counter-clockwise
         speedX: (0.3 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
         speedY: (0.3 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
@@ -190,24 +188,19 @@ export function ParticleLogoEffect({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      // Draw ring - AUDIO REACTIVE with glow
+      // Draw ring - SUBTLE audio reactivity
       ctx.save();
 
-      // Ring also glows based on amplitude
-      ctx.shadowBlur = 8 + amplitude * 20;
-      ctx.shadowColor = `rgba(100, 200, 255, ${0.3 + amplitude * 0.5})`;
+      // Subtle glow
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = `rgba(100, 200, 255, 0.4)`;
 
       ctx.beginPath();
 
-      // MORE responsive wobble - reacts strongly to audio
-      const baseWobble = 2; // Slight wobble even when silent
-      const audioWobble = amplitude * 20; // Strong reaction to audio
-      const morphAmount = baseWobble + audioWobble;
-      const morphSpeed = 2 + amplitude * 3; // Speed up with audio
-
+      // VERY SUBTLE wobble - just enough to catch the eye
+      const wobbleAmount = 1 + amplitude * 3; // Gentle wobble
       for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
-        const wobble = Math.sin(angle * 4 + time * morphSpeed) * morphAmount +
-                       Math.sin(angle * 7 - time * morphSpeed * 0.8) * morphAmount * 0.3;
+        const wobble = Math.sin(angle * 5 + time * 2) * wobbleAmount;
         const r = ringRadius + wobble;
         const x = centerX + Math.cos(angle) * r;
         const y = centerY + Math.sin(angle) * r;
@@ -216,8 +209,8 @@ export function ParticleLogoEffect({
       }
       ctx.closePath();
 
-      // Rainbow gradient that rotates
-      const ringGradient = ctx.createConicGradient(time * 0.5, centerX, centerY);
+      // Rainbow gradient that slowly rotates
+      const ringGradient = ctx.createConicGradient(time * 0.3, centerX, centerY);
       ringGradient.addColorStop(0, "rgba(0, 200, 255, 1)");
       ringGradient.addColorStop(0.125, "rgba(0, 100, 255, 1)");
       ringGradient.addColorStop(0.25, "rgba(100, 0, 255, 1)");
@@ -228,9 +221,9 @@ export function ParticleLogoEffect({
       ringGradient.addColorStop(0.875, "rgba(0, 255, 100, 1)");
       ringGradient.addColorStop(1, "rgba(0, 200, 255, 1)");
       ctx.strokeStyle = ringGradient;
-      ctx.lineWidth = 2 + amplitude * 4;
+      ctx.lineWidth = 2.5 + amplitude * 1.5; // Subtle thickness change
       ctx.stroke();
-      ctx.restore()
+      ctx.restore();
 
       const threshold = 0.05;
 
@@ -295,34 +288,34 @@ export function ParticleLogoEffect({
         // Sort by Z (back to front) for proper depth
         particleData.sort((a, b) => a.drawZ - b.drawZ);
 
-        // Draw GLOSSY 3D particles with AVATAR TREE GLOW effect
+        // Draw GLOSSY 3D particles with SUBTLE glow (Avatar-inspired but not overdone)
         for (const { p, drawX, drawY, drawZ, drawSize } of particleData) {
           const px = centerX + drawX;
           const py = centerY + drawY;
-          const radius = drawSize * 1.2;
+          const radius = drawSize;
           const { r, g, b } = p.color;
 
-          // AVATAR GLOW - particles emit colored light
+          // SUBTLE glow - enough to see color bleed but not fill gaps
           ctx.save();
-          ctx.shadowBlur = 12 + normalizedAmp * 8;
-          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.8)`;
+          ctx.shadowBlur = 4 + normalizedAmp * 3;
+          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
 
           // Create radial gradient for 3D glossy sphere effect
-          const highlightX = px - radius * 0.3;
-          const highlightY = py - radius * 0.3;
+          const highlightX = px - radius * 0.25;
+          const highlightY = py - radius * 0.25;
 
           const gradient = ctx.createRadialGradient(
             highlightX, highlightY, 0,
             px, py, radius
           );
 
-          // Brighter, more vivid colors for glow effect
-          const highlight = `rgba(${Math.min(255, r + 100)}, ${Math.min(255, g + 100)}, ${Math.min(255, b + 100)}, 1)`;
+          // Glossy sphere appearance
+          const highlight = `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, 1)`;
           const midtone = `rgba(${r}, ${g}, ${b}, 1)`;
-          const edge = `rgba(${r}, ${g}, ${b}, 0.7)`;
+          const edge = `rgba(${Math.max(0, r - 30)}, ${Math.max(0, g - 30)}, ${Math.max(0, b - 30)}, 0.9)`;
 
           gradient.addColorStop(0, highlight);
-          gradient.addColorStop(0.5, midtone);
+          gradient.addColorStop(0.4, midtone);
           gradient.addColorStop(1, edge);
 
           ctx.beginPath();

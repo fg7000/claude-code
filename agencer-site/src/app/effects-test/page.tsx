@@ -153,8 +153,8 @@ export default function EffectsTestPage() {
         const val = (timeData[i] - 128) / 128;
         sum += val * val;
       }
-      // Boost microphone sensitivity (mic input is quieter than synthetic)
-      const rms = Math.min(1, Math.sqrt(sum / bufferLength) * 3);
+      // Slight boost for microphone (mic input is quieter than synthetic)
+      const rms = Math.min(1, Math.sqrt(sum / bufferLength) * 1.8);
 
       // Detect onset
       const onset = rms > onsetThreshold && prevAmplitudeRef.current < onsetThreshold;
