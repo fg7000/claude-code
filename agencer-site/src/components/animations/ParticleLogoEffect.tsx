@@ -156,6 +156,7 @@ export function ParticleLogoEffect({
 
     particlesRef.current = particles;
     isInitializedRef.current = true;
+    console.log('Particles initialized:', particles.length);
     setIsLoaded(true);
   }, [size, dpr]);
 
@@ -263,6 +264,9 @@ export function ParticleLogoEffect({
 
       // Draw particles ONLY when amplitude is above threshold
       if (amplitude > logoThreshold) {
+        if (frameCount % 60 === 0) {
+          console.log('Drawing particles, amplitude:', amplitude.toFixed(3), 'count:', particles.length);
+        }
         // Particle opacity ramps up as amplitude increases
         const particleOpacity = Math.min(1, (amplitude - logoThreshold) * 5);
 
