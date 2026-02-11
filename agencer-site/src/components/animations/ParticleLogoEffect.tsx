@@ -191,21 +191,23 @@ export function ParticleLogoEffect({
       // Draw ring - AUDIO REACTIVE (responds to voice)
       ctx.save();
 
-      // Glow intensity follows audio
-      ctx.shadowBlur = 4 + amplitude * 12;
-      ctx.shadowColor = `rgba(100, 200, 255, ${0.3 + amplitude * 0.4})`;
+      // DRAMATIC glow that pulses with audio
+      const glowIntensity = 8 + amplitude * 40;
+      ctx.shadowBlur = glowIntensity;
+      ctx.shadowColor = `rgba(100, 200, 255, ${0.5 + amplitude * 0.5})`;
 
       ctx.beginPath();
 
-      // Ring wobble - subtle but visible audio reactivity
-      // Base wobble always present, amplified by audio
-      const baseWobble = 1;
-      const audioWobble = amplitude * 6;
-      const wobbleAmount = baseWobble + audioWobble;
+      // Ring PULSES bigger with audio (very visible effect)
+      const pulseScale = 1 + amplitude * 0.08; // Ring grows up to 8% bigger
+      const baseRadius = ringRadius * pulseScale;
+
+      // Wobble also increases with audio
+      const wobbleAmount = amplitude * 15; // No wobble when silent, up to 15px when loud
 
       for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
-        const wobble = Math.sin(angle * 5 + time * 2) * wobbleAmount;
-        const r = ringRadius + wobble;
+        const wobble = Math.sin(angle * 5 + time * 3) * wobbleAmount;
+        const r = baseRadius + wobble;
         const x = centerX + Math.cos(angle) * r;
         const y = centerY + Math.sin(angle) * r;
         if (angle === 0) ctx.moveTo(x, y);
@@ -225,8 +227,8 @@ export function ParticleLogoEffect({
       ringGradient.addColorStop(0.875, "rgba(0, 255, 100, 1)");
       ringGradient.addColorStop(1, "rgba(0, 200, 255, 1)");
       ctx.strokeStyle = ringGradient;
-      // Line width pulses with audio
-      ctx.lineWidth = 2 + amplitude * 3;
+      // Line width pulses dramatically with audio
+      ctx.lineWidth = 2 + amplitude * 6;
       ctx.stroke();
       ctx.restore();
 
