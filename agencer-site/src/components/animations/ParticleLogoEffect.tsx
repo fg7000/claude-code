@@ -122,7 +122,7 @@ export function ParticleLogoEffect({
       const pos = allPositions[i];
 
       // Each particle gets COMPLETELY RANDOM orbit parameters
-      // This creates the "washing machine" effect - chaotic individual motion
+      // Circular orbits with varying sizes and speeds for swirling effect
       particles.push({
         x: pos.x,
         y: pos.y,
@@ -131,18 +131,18 @@ export function ParticleLogoEffect({
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
         size: 1.0 + Math.random() * 0.6,
-        // Different speeds for each axis - creates complex Lissajous-like paths
-        speedX: 0.5 + Math.random() * 1.5,
-        speedY: 0.5 + Math.random() * 1.5,
-        speedZ: 0.3 + Math.random() * 1.0,
-        // Random starting phase - so particles aren't in sync
+        // Orbital speeds - some fast, some slow, some clockwise, some counter-clockwise
+        speedX: (0.3 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
+        speedY: (0.3 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
+        speedZ: (0.2 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1),
+        // Random starting phase
         phaseX: Math.random() * Math.PI * 2,
         phaseY: Math.random() * Math.PI * 2,
         phaseZ: Math.random() * Math.PI * 2,
-        // Random radius of motion for each axis
-        radiusX: 0.3 + Math.random() * 0.7,
-        radiusY: 0.3 + Math.random() * 0.7,
-        radiusZ: 0.2 + Math.random() * 0.5,
+        // Orbit radius - how big the circular path is
+        radiusX: 0.5 + Math.random() * 1.0,
+        radiusY: 0.5 + Math.random() * 1.0,
+        radiusZ: 0.3 + Math.random() * 0.7,
       });
     }
 
@@ -238,13 +238,18 @@ export function ParticleLogoEffect({
         const particleData: { p: Particle; drawX: number; drawY: number; drawZ: number; drawSize: number }[] = [];
 
         for (const p of particles) {
-          // Each particle orbits independently on its own random 3D path
-          // Like balls tumbling in a washing machine
-          const orbitX = Math.sin(time * p.speedX + p.phaseX) * p.radiusX;
-          const orbitY = Math.sin(time * p.speedY + p.phaseY) * p.radiusY;
-          const orbitZ = Math.sin(time * p.speedZ + p.phaseZ) * p.radiusZ;
+          // TRUE CIRCULAR ORBIT - each particle swirls around its home position
+          // Using sin/cos pair creates actual circular motion, not back-and-forth
+          const angle1 = time * p.speedX + p.phaseX;
+          const angle2 = time * p.speedY + p.phaseY;
+          const angle3 = time * p.speedZ + p.phaseZ;
 
-          // Position = base position + random orbit * drift amount
+          // Circular motion in XY plane + secondary wobble for complexity
+          const orbitX = Math.cos(angle1) * p.radiusX + Math.sin(angle2 * 0.7) * p.radiusY * 0.3;
+          const orbitY = Math.sin(angle1) * p.radiusX + Math.cos(angle2 * 0.7) * p.radiusY * 0.3;
+          const orbitZ = Math.sin(angle3) * p.radiusZ;
+
+          // Position = base position + circular orbit * drift amount
           const drawX = p.baseX + orbitX * maxDrift;
           const drawY = p.baseY + orbitY * maxDrift;
           const drawZ = orbitZ * maxDrift;
