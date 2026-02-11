@@ -109,8 +109,8 @@ export function ParticleLogoEffect({
       }
     }
 
-    // High particle count for crisp detail
-    const targetCount = 80000;
+    // Fewer particles = visible gaps between them = magical dissolve effect
+    const targetCount = 20000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
@@ -125,7 +125,7 @@ export function ParticleLogoEffect({
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 0.5 + Math.random() * 0.3,
+        size: 0.8 + Math.random() * 0.4, // Slightly larger, crisp dots
         seed: Math.random() * 1000,
         angle,
         dist,
@@ -221,15 +221,15 @@ export function ParticleLogoEffect({
         // Normalize amplitude above threshold (0 to 1 range)
         const normalizedAmp = Math.min(1, (amplitude - threshold) / 0.5);
 
-        // Twist amount - full rotation at high amplitude
-        const maxTwist = Math.PI * 1.5; // 270 degrees max twist
+        // Twist amount - rotation for 3D spiral effect
+        const maxTwist = Math.PI * 1.2; // ~216 degrees max twist
         const twistAmount = normalizedAmp * maxTwist;
 
-        // Expansion - particles push outward
-        const expansion = 1 + normalizedAmp * 0.4;
+        // Expansion - particles push outward to create gaps
+        const expansion = 1 + normalizedAmp * 0.6;
 
-        // Dispersion - how much particles scatter from their base position
-        const dispersion = normalizedAmp * 25;
+        // Dispersion - MORE scatter to show gaps between particles
+        const dispersion = normalizedAmp * 40;
 
         for (const p of particles) {
           // Organic noise-based movement
@@ -258,28 +258,29 @@ export function ParticleLogoEffect({
           p.x = Math.cos(rotatedAngle) * dist;
           p.y = Math.sin(rotatedAngle) * dist;
 
-          // Keep particles within ring boundary (soft constraint)
+          // Soft boundary - allow particles to spread but stay roughly within ring
           const currentDist = Math.sqrt(p.x * p.x + p.y * p.y);
-          const maxDist = ringRadius - 5 + normalizedAmp * 15;
+          const maxDist = ringRadius - 2 + normalizedAmp * 25;
           if (currentDist > maxDist) {
             const scale = maxDist / currentDist;
+            p.x *= scale * 0.95; // Soft push back
+            p.y *= scale * 0.95;
+          }
+
+          // Maintain center hole
+          const minDist = centerHoleRadius + normalizedAmp * 5;
+          if (currentDist < minDist && currentDist > 0) {
+            const scale = minDist / currentDist;
             p.x *= scale;
             p.y *= scale;
           }
 
-          // Maintain center hole
-          if (currentDist < centerHoleRadius) {
-            const angle = Math.atan2(p.y, p.x);
-            p.x = Math.cos(angle) * centerHoleRadius;
-            p.y = Math.sin(angle) * centerHoleRadius;
-          }
+          // Crisp particle size - small dots with gaps visible between them
+          const depthScale = 1 + p.z * 0.01;
+          const ampScale = 0.9 + normalizedAmp * 0.3;
+          const drawSize = Math.max(0.4, Math.min(1.8, p.size * depthScale * ampScale));
 
-          // Particle size - varies with depth and amplitude
-          const depthScale = 1 + p.z * 0.015;
-          const ampScale = 0.8 + normalizedAmp * 0.4;
-          const drawSize = Math.max(0.3, Math.min(1.5, p.size * depthScale * ampScale));
-
-          // Draw particle with full opacity
+          // Draw crisp particle
           ctx.beginPath();
           ctx.arc(centerX + p.x, centerY + p.y, drawSize, 0, Math.PI * 2);
           ctx.fillStyle = `rgb(${p.color.r}, ${p.color.g}, ${p.color.b})`;
