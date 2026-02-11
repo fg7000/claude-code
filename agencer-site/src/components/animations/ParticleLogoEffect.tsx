@@ -12,10 +12,16 @@ interface Particle {
   baseY: number;
   color: { r: number; g: number; b: number };
   size: number;
-  // Each particle has unique noise offsets for organic movement
-  seed: number;
-  angle: number; // Base angle from center
-  dist: number;  // Base distance from center
+  // Random orbit parameters - each particle moves independently like balls in a washing machine
+  speedX: number;
+  speedY: number;
+  speedZ: number;
+  phaseX: number;
+  phaseY: number;
+  phaseZ: number;
+  radiusX: number;
+  radiusY: number;
+  radiusZ: number;
 }
 
 interface ParticleLogoEffectProps {
@@ -72,7 +78,6 @@ export function ParticleLogoEffect({
 
     logoImageRef.current = img;
 
-    // Sample the logo at high resolution
     const sampleSize = 800;
     const logoScale = 0.70;
     const scaleFactor = (size * logoScale) / sampleSize;
@@ -109,15 +114,15 @@ export function ParticleLogoEffect({
       }
     }
 
-    // Fewer particles = visible gaps between them = magical dissolve effect
-    const targetCount = 20000;
+    // Moderate particle count for visible gaps
+    const targetCount = 12000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
       const pos = allPositions[i];
-      const angle = Math.atan2(pos.y, pos.x);
-      const dist = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
 
+      // Each particle gets COMPLETELY RANDOM orbit parameters
+      // This creates the "washing machine" effect - chaotic individual motion
       particles.push({
         x: pos.x,
         y: pos.y,
@@ -125,10 +130,19 @@ export function ParticleLogoEffect({
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 0.8 + Math.random() * 0.4, // Slightly larger, crisp dots
-        seed: Math.random() * 1000,
-        angle,
-        dist,
+        size: 1.0 + Math.random() * 0.6,
+        // Different speeds for each axis - creates complex Lissajous-like paths
+        speedX: 0.5 + Math.random() * 1.5,
+        speedY: 0.5 + Math.random() * 1.5,
+        speedZ: 0.3 + Math.random() * 1.0,
+        // Random starting phase - so particles aren't in sync
+        phaseX: Math.random() * Math.PI * 2,
+        phaseY: Math.random() * Math.PI * 2,
+        phaseZ: Math.random() * Math.PI * 2,
+        // Random radius of motion for each axis
+        radiusX: 0.3 + Math.random() * 0.7,
+        radiusY: 0.3 + Math.random() * 0.7,
+        radiusZ: 0.2 + Math.random() * 0.5,
       });
     }
 
@@ -151,19 +165,18 @@ export function ParticleLogoEffect({
     const centerX = size / 2;
     const centerY = size / 2;
     const ringRadius = size * 0.47;
-    const centerHoleRadius = size * 0.04;
+    const centerHoleRadius = size * 0.03;
 
     const animate = () => {
       timeRef.current += 0.016;
       const time = timeRef.current;
       const particles = particlesRef.current;
 
-      // Get raw amplitude
       const rawAmplitude = audioDataRef.current.amplitude;
 
-      // SNAPPY envelope - fast attack, fast release for heartbeat feel
+      // Snappy response
       const attackSpeed = 0.5;
-      const releaseSpeed = 0.3;
+      const releaseSpeed = 0.4;
 
       if (rawAmplitude > smoothedAmplitudeRef.current) {
         smoothedAmplitudeRef.current += (rawAmplitude - smoothedAmplitudeRef.current) * attackSpeed;
@@ -177,17 +190,17 @@ export function ParticleLogoEffect({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      // Draw rainbow ring (always visible, wobbles with amplitude)
+      // Draw rainbow ring
       ctx.save();
       ctx.beginPath();
       const wobbleAmount = 1 + amplitude * 8;
       const wobbleFreq = 5;
-      for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
-        const wobble = Math.sin(angle * wobbleFreq + time * 2) * wobbleAmount;
+      for (let a = 0; a <= Math.PI * 2; a += 0.02) {
+        const wobble = Math.sin(a * wobbleFreq + time * 2) * wobbleAmount;
         const r = ringRadius + wobble;
-        const x = centerX + Math.cos(angle) * r;
-        const y = centerY + Math.sin(angle) * r;
-        if (angle === 0) ctx.moveTo(x, y);
+        const x = centerX + Math.cos(a) * r;
+        const y = centerY + Math.sin(a) * r;
+        if (a === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
       ctx.closePath();
@@ -207,83 +220,72 @@ export function ParticleLogoEffect({
       ctx.stroke();
       ctx.restore();
 
-      // Threshold for switching between solid logo and particles
       const threshold = 0.05;
 
       if (amplitude < threshold) {
-        // SOLID LOGO - clean and crisp when silent
+        // SOLID LOGO when silent
         const logoSize = size * 0.70;
         const logoOffset = (size - logoSize) / 2;
         ctx.drawImage(logoImg, logoOffset, logoOffset, logoSize, logoSize);
       } else {
-        // PARTICLES - alive, twisting, bouncing when speaking
-
-        // Normalize amplitude above threshold (0 to 1 range)
+        // PARTICLES - "washing machine" random 3D motion
         const normalizedAmp = Math.min(1, (amplitude - threshold) / 0.5);
 
-        // Twist amount - rotation for 3D spiral effect
-        const maxTwist = Math.PI * 1.2; // ~216 degrees max twist
-        const twistAmount = normalizedAmp * maxTwist;
+        // How far particles can drift from home - increases with amplitude
+        const maxDrift = normalizedAmp * 60;
 
-        // Expansion - particles push outward to create gaps
-        const expansion = 1 + normalizedAmp * 0.6;
-
-        // Dispersion - MORE scatter to show gaps between particles
-        const dispersion = normalizedAmp * 40;
+        // Collect particles with their Z for depth sorting
+        const particleData: { p: Particle; drawX: number; drawY: number; drawZ: number; drawSize: number }[] = [];
 
         for (const p of particles) {
-          // Organic noise-based movement
-          const noiseTime = time * 1.2;
-          const nx = Math.sin(p.seed + noiseTime * 0.7) * Math.cos(p.seed * 0.5 + noiseTime * 0.5);
-          const ny = Math.cos(p.seed * 0.7 + noiseTime * 0.6) * Math.sin(p.seed * 0.3 + noiseTime * 0.8);
-          const nz = Math.sin(p.seed * 0.4 + noiseTime * 0.9) * 0.5;
+          // Each particle orbits independently on its own random 3D path
+          // Like balls tumbling in a washing machine
+          const orbitX = Math.sin(time * p.speedX + p.phaseX) * p.radiusX;
+          const orbitY = Math.sin(time * p.speedY + p.phaseY) * p.radiusY;
+          const orbitZ = Math.sin(time * p.speedZ + p.phaseZ) * p.radiusZ;
 
-          // Apply dispersion based on noise
-          const dx = nx * dispersion;
-          const dy = ny * dispersion;
-          p.z = nz * dispersion;
+          // Position = base position + random orbit * drift amount
+          const drawX = p.baseX + orbitX * maxDrift;
+          const drawY = p.baseY + orbitY * maxDrift;
+          const drawZ = orbitZ * maxDrift;
 
-          // Calculate expanded position
-          const expandedX = p.baseX * expansion + dx;
-          const expandedY = p.baseY * expansion + dy;
+          // Soft boundary - keep particles roughly within ring
+          let finalX = drawX;
+          let finalY = drawY;
+          const dist = Math.sqrt(finalX * finalX + finalY * finalY);
+          const maxAllowed = ringRadius - 8;
 
-          // Apply twist rotation around center
-          const dist = Math.sqrt(expandedX * expandedX + expandedY * expandedY);
-          const baseAngle = Math.atan2(expandedY, expandedX);
-
-          // Outer particles twist more (spiral effect)
-          const distFactor = Math.min(1, dist / ringRadius);
-          const rotatedAngle = baseAngle + twistAmount * distFactor;
-
-          p.x = Math.cos(rotatedAngle) * dist;
-          p.y = Math.sin(rotatedAngle) * dist;
-
-          // Soft boundary - allow particles to spread but stay roughly within ring
-          const currentDist = Math.sqrt(p.x * p.x + p.y * p.y);
-          const maxDist = ringRadius - 2 + normalizedAmp * 25;
-          if (currentDist > maxDist) {
-            const scale = maxDist / currentDist;
-            p.x *= scale * 0.95; // Soft push back
-            p.y *= scale * 0.95;
+          if (dist > maxAllowed) {
+            const scale = maxAllowed / dist;
+            finalX *= scale;
+            finalY *= scale;
           }
 
-          // Maintain center hole
-          const minDist = centerHoleRadius + normalizedAmp * 5;
-          if (currentDist < minDist && currentDist > 0) {
-            const scale = minDist / currentDist;
-            p.x *= scale;
-            p.y *= scale;
+          // Keep center hole clear
+          if (dist < centerHoleRadius && dist > 0) {
+            const scale = centerHoleRadius / dist;
+            finalX *= scale;
+            finalY *= scale;
           }
 
-          // Crisp particle size - small dots with gaps visible between them
-          const depthScale = 1 + p.z * 0.01;
-          const ampScale = 0.9 + normalizedAmp * 0.3;
-          const drawSize = Math.max(0.4, Math.min(1.8, p.size * depthScale * ampScale));
+          // Size varies with depth (closer = bigger)
+          const depthFactor = 1 + (drawZ / 60) * 0.4;
+          const drawSize = Math.max(0.6, p.size * depthFactor);
 
-          // Draw crisp particle
+          particleData.push({ p, drawX: finalX, drawY: finalY, drawZ, drawSize });
+        }
+
+        // Sort by Z (back to front) for proper depth
+        particleData.sort((a, b) => a.drawZ - b.drawZ);
+
+        // Draw particles
+        for (const { p, drawX, drawY, drawZ, drawSize } of particleData) {
+          // Slight opacity variation with depth
+          const opacity = 0.75 + (drawZ / 60 + 0.5) * 0.25;
+
           ctx.beginPath();
-          ctx.arc(centerX + p.x, centerY + p.y, drawSize, 0, Math.PI * 2);
-          ctx.fillStyle = `rgb(${p.color.r}, ${p.color.g}, ${p.color.b})`;
+          ctx.arc(centerX + drawX, centerY + drawY, drawSize, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${Math.min(1, opacity)})`;
           ctx.fill();
         }
       }
