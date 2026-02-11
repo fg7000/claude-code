@@ -114,8 +114,8 @@ export function ParticleLogoEffect({
       }
     }
 
-    // Moderate particle count for visible gaps
-    const targetCount = 12000;
+    // Fewer particles so glossy effect is visible
+    const targetCount = 8000;
     const step = Math.max(1, Math.floor(allPositions.length / targetCount));
 
     for (let i = 0; i < allPositions.length; i += step) {
@@ -130,7 +130,7 @@ export function ParticleLogoEffect({
         baseX: pos.x,
         baseY: pos.y,
         color: { r: pos.r, g: pos.g, b: pos.b },
-        size: 1.0 + Math.random() * 0.6,
+        size: 1.4 + Math.random() * 0.8, // Bigger particles for visible gloss
         // Orbital speeds - some fast, some slow, some clockwise, some counter-clockwise
         speedX: (0.3 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
         speedY: (0.3 + Math.random() * 1.2) * (Math.random() > 0.5 ? 1 : -1),
@@ -190,49 +190,38 @@ export function ParticleLogoEffect({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      // Draw rainbow ring - MULTIPLE SINUSOIDAL WAVES wrapped in circle
-      // Like an audio visualizer line, but circular
-      const ringColors = [
-        "rgba(0, 200, 255, 0.9)",   // cyan
-        "rgba(0, 100, 255, 0.9)",   // blue
-        "rgba(100, 0, 255, 0.9)",   // purple
-        "rgba(255, 0, 200, 0.9)",   // magenta
-        "rgba(255, 0, 100, 0.9)",   // pink
-        "rgba(255, 150, 0, 0.9)",   // orange
-        "rgba(255, 255, 0, 0.9)",   // yellow
-        "rgba(0, 255, 100, 0.9)",   // green
-      ];
+      // Draw ring - SIMPLE, clean, organic shape-morphing with audio
+      ctx.save();
+      ctx.beginPath();
 
-      // Each colored line gets its own sinusoidal wave
-      const waveAmplitude = 3 + amplitude * 15; // Wave height based on audio
-      const waveFrequency = 8; // How many waves around the circle
-
-      for (let lineIndex = 0; lineIndex < ringColors.length; lineIndex++) {
-        ctx.save();
-        ctx.beginPath();
-
-        // Each line has slightly different phase for variety
-        const phaseOffset = (lineIndex / ringColors.length) * Math.PI * 2;
-        // Each line at slightly different base radius
-        const lineRadius = ringRadius - 8 + (lineIndex * 2);
-
-        for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
-          // Sinusoidal wave: varies radius based on angle
-          const wave = Math.sin(angle * waveFrequency + time * 3 + phaseOffset) * waveAmplitude;
-          const r = lineRadius + wave;
-          const x = centerX + Math.cos(angle) * r;
-          const y = centerY + Math.sin(angle) * r;
-
-          if (angle === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-
-        ctx.strokeStyle = ringColors[lineIndex];
-        ctx.lineWidth = 1.5 + amplitude * 1;
-        ctx.stroke();
-        ctx.restore();
+      // Subtle organic wobble that responds to audio
+      const morphAmount = amplitude * 10;
+      for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
+        const wobble = Math.sin(angle * 3 + time * 2) * morphAmount +
+                       Math.sin(angle * 5 - time * 1.5) * morphAmount * 0.4;
+        const r = ringRadius + wobble;
+        const x = centerX + Math.cos(angle) * r;
+        const y = centerY + Math.sin(angle) * r;
+        if (angle === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
+      ctx.closePath();
+
+      // Rainbow gradient
+      const ringGradient = ctx.createConicGradient(time * 0.3, centerX, centerY);
+      ringGradient.addColorStop(0, "rgba(0, 200, 255, 1)");
+      ringGradient.addColorStop(0.125, "rgba(0, 100, 255, 1)");
+      ringGradient.addColorStop(0.25, "rgba(100, 0, 255, 1)");
+      ringGradient.addColorStop(0.375, "rgba(255, 0, 200, 1)");
+      ringGradient.addColorStop(0.5, "rgba(255, 0, 100, 1)");
+      ringGradient.addColorStop(0.625, "rgba(255, 150, 0, 1)");
+      ringGradient.addColorStop(0.75, "rgba(255, 255, 0, 1)");
+      ringGradient.addColorStop(0.875, "rgba(0, 255, 100, 1)");
+      ringGradient.addColorStop(1, "rgba(0, 200, 255, 1)");
+      ctx.strokeStyle = ringGradient;
+      ctx.lineWidth = 3 + amplitude * 3;
+      ctx.stroke();
+      ctx.restore()
 
       const threshold = 0.05;
 
@@ -297,14 +286,35 @@ export function ParticleLogoEffect({
         // Sort by Z (back to front) for proper depth
         particleData.sort((a, b) => a.drawZ - b.drawZ);
 
-        // Draw particles
+        // Draw GLOSSY 3D particles with radial gradients
         for (const { p, drawX, drawY, drawZ, drawSize } of particleData) {
-          // Slight opacity variation with depth
-          const opacity = 0.75 + (drawZ / 60 + 0.5) * 0.25;
+          const px = centerX + drawX;
+          const py = centerY + drawY;
+          const radius = drawSize * 1.2;
+
+          // Create radial gradient for 3D glossy sphere effect
+          // Highlight offset toward top-left
+          const highlightX = px - radius * 0.3;
+          const highlightY = py - radius * 0.3;
+
+          const gradient = ctx.createRadialGradient(
+            highlightX, highlightY, 0,  // Inner circle (highlight)
+            px, py, radius              // Outer circle (edge)
+          );
+
+          // Brighter highlight in top-left
+          const { r, g, b } = p.color;
+          const highlight = `rgba(${Math.min(255, r + 80)}, ${Math.min(255, g + 80)}, ${Math.min(255, b + 80)}, 1)`;
+          const midtone = `rgba(${r}, ${g}, ${b}, 1)`;
+          const shadow = `rgba(${Math.max(0, r - 40)}, ${Math.max(0, g - 40)}, ${Math.max(0, b - 40)}, 0.9)`;
+
+          gradient.addColorStop(0, highlight);
+          gradient.addColorStop(0.4, midtone);
+          gradient.addColorStop(1, shadow);
 
           ctx.beginPath();
-          ctx.arc(centerX + drawX, centerY + drawY, drawSize, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${Math.min(1, opacity)})`;
+          ctx.arc(px, py, radius, 0, Math.PI * 2);
+          ctx.fillStyle = gradient;
           ctx.fill();
         }
       }
