@@ -201,9 +201,9 @@ export function ParticleLogoEffect({
 
       const amplitude = smoothedAmplitudeRef.current;
 
-      // Noise strength - MORE bouncy explosion
+      // Noise strength for particle movement
       const baseNoiseStrength = 2;
-      const audioNoiseStrength = amplitude * 120; // Increased for more bounce
+      const audioNoiseStrength = amplitude * 60; // Moderate bounce
       const noiseStrength = baseNoiseStrength + audioNoiseStrength;
 
       // Expansion - MORE bouncy outward explosion
@@ -326,9 +326,11 @@ export function ParticleLogoEffect({
             p.y += Math.sin(angle) * push;
           }
 
-          // Size varies with Z depth and amplitude - MORE 3D
-          const depthScale = 1 + p.z * 0.05; // Increased depth effect
-          const drawSize = p.size * depthScale * (0.7 + amplitude * 0.6);
+          // Size varies with Z depth and amplitude
+          // Clamp z effect to prevent negative sizes
+          const zEffect = Math.max(-10, Math.min(10, p.z * 0.02));
+          const depthScale = Math.max(0.3, 1 + zEffect);
+          const drawSize = Math.max(0.2, p.size * depthScale * (0.8 + amplitude * 0.4));
 
           // Draw particle
           ctx.beginPath();
