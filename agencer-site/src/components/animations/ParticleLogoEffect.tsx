@@ -190,35 +190,49 @@ export function ParticleLogoEffect({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, size, size);
 
-      // Draw rainbow ring
-      ctx.save();
-      ctx.beginPath();
-      const wobbleAmount = 1 + amplitude * 8;
-      const wobbleFreq = 5;
-      for (let a = 0; a <= Math.PI * 2; a += 0.02) {
-        const wobble = Math.sin(a * wobbleFreq + time * 2) * wobbleAmount;
-        const r = ringRadius + wobble;
-        const x = centerX + Math.cos(a) * r;
-        const y = centerY + Math.sin(a) * r;
-        if (a === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
+      // Draw rainbow ring - MULTIPLE SINUSOIDAL WAVES wrapped in circle
+      // Like an audio visualizer line, but circular
+      const ringColors = [
+        "rgba(0, 200, 255, 0.9)",   // cyan
+        "rgba(0, 100, 255, 0.9)",   // blue
+        "rgba(100, 0, 255, 0.9)",   // purple
+        "rgba(255, 0, 200, 0.9)",   // magenta
+        "rgba(255, 0, 100, 0.9)",   // pink
+        "rgba(255, 150, 0, 0.9)",   // orange
+        "rgba(255, 255, 0, 0.9)",   // yellow
+        "rgba(0, 255, 100, 0.9)",   // green
+      ];
 
-      const ringGradient = ctx.createConicGradient(0, centerX, centerY);
-      ringGradient.addColorStop(0, "rgba(0, 200, 255, 0.9)");
-      ringGradient.addColorStop(0.12, "rgba(0, 100, 255, 0.9)");
-      ringGradient.addColorStop(0.25, "rgba(100, 0, 255, 0.9)");
-      ringGradient.addColorStop(0.37, "rgba(255, 0, 200, 0.9)");
-      ringGradient.addColorStop(0.5, "rgba(255, 0, 100, 0.9)");
-      ringGradient.addColorStop(0.62, "rgba(255, 150, 0, 0.9)");
-      ringGradient.addColorStop(0.75, "rgba(255, 255, 0, 0.9)");
-      ringGradient.addColorStop(0.87, "rgba(0, 255, 100, 0.9)");
-      ringGradient.addColorStop(1, "rgba(0, 200, 255, 0.9)");
-      ctx.strokeStyle = ringGradient;
-      ctx.lineWidth = 2 + amplitude * 4;
-      ctx.stroke();
-      ctx.restore();
+      // Each colored line gets its own sinusoidal wave
+      const waveAmplitude = 3 + amplitude * 15; // Wave height based on audio
+      const waveFrequency = 8; // How many waves around the circle
+
+      for (let lineIndex = 0; lineIndex < ringColors.length; lineIndex++) {
+        ctx.save();
+        ctx.beginPath();
+
+        // Each line has slightly different phase for variety
+        const phaseOffset = (lineIndex / ringColors.length) * Math.PI * 2;
+        // Each line at slightly different base radius
+        const lineRadius = ringRadius - 8 + (lineIndex * 2);
+
+        for (let angle = 0; angle <= Math.PI * 2; angle += 0.02) {
+          // Sinusoidal wave: varies radius based on angle
+          const wave = Math.sin(angle * waveFrequency + time * 3 + phaseOffset) * waveAmplitude;
+          const r = lineRadius + wave;
+          const x = centerX + Math.cos(angle) * r;
+          const y = centerY + Math.sin(angle) * r;
+
+          if (angle === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+
+        ctx.strokeStyle = ringColors[lineIndex];
+        ctx.lineWidth = 1.5 + amplitude * 1;
+        ctx.stroke();
+        ctx.restore();
+      }
 
       const threshold = 0.05;
 

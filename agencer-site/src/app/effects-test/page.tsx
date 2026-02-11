@@ -186,20 +186,33 @@ export default function EffectsTestPage() {
         <p className="text-sm text-white/50 mt-1">Based on video reference</p>
       </div>
 
-      {/* Main Effect Display */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="flex flex-col items-center gap-6">
+      {/* Main Effect Display - Large and Small versions */}
+      <div className="flex-1 flex items-center justify-center p-8 gap-12">
+        {/* Large version */}
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-white/50 text-xs">Large (400px)</p>
           <ParticleLogoEffect
             size={400}
             effect="breathe"
             audioData={audioData}
           />
-          <p className="text-white/40 text-sm">
-            {audioMode === "off" ? "Click a button below to start" :
-             amplitude > 0.1 ? "Speaking..." : "Listening..."}
-          </p>
+        </div>
+
+        {/* Small version - 60% of large */}
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-white/50 text-xs">Small (240px - 60%)</p>
+          <ParticleLogoEffect
+            size={240}
+            effect="breathe"
+            audioData={audioData}
+          />
         </div>
       </div>
+
+      <p className="text-white/40 text-sm text-center pb-4">
+        {audioMode === "off" ? "Click a button below to start" :
+         amplitude > 0.1 ? "Speaking..." : "Listening..."}
+      </p>
 
       {/* Controls */}
       <div className="p-6 border-t border-white/10 bg-black/20">
